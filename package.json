@@ -1,0 +1,24 @@
+{
+  "name": "@wa-os/ts-kernel",
+  "version": "0.1.0",
+  "description": "WebAssembly OS Kernel - typescript implementation",
+  "main": "src/index.ts",
+  "module": "src/index.ts",
+  "types": "dist/src/index.d.ts",
+  "author": "Michał Łaszczewski",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/src/index.js"
+  },
+  "bin": {
+  },
+  "dependencies": {
+    "yargs": "^17.7.2"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.5",
+    "@types/yargs": "^17.0.32"
+  }
+}
