@@ -2,64 +2,43 @@
 import { TypeRegistry, TypeDescription, TypeKind } from '@wa-os/ts-rpc'
 
 // TypeScript type definitions
-export interface Kernel_9 {
-  "Kernel.create_process": any
-  "Kernel.destroy_process": any
-  "Kernel.load_module": any
-  "Kernel.load_memory": any
-  "Kernel.store_memory": any
-  "Kernel.initialize_process": any
-  "Kernel.finalize_process": any
-  "Kernel.send_message": any
-  "Kernel.request": any
-  "Kernel.link": any
-  "Kernel.unlink": any
-  "Kernel.connect": any
-  "Kernel.disconnect": any
-  "Kernel.monitor": any
-  "Kernel.unmonitor": any
-  "Kernel.set": any
-  "Kernel.get": any
-  "Kernel.remove": any
-  "Kernel.range_get": any
-  "Kernel.range_remove": any
-  "Kernel.batch_update": any
+export interface kernel_9 {
+  "kernel.spawn": any
+  "kernel.resurect": any
+  "kernel.save": any
+  "kernel.kill": any
+  "kernel.bind": any
+  "kernel.unbind": any
+  "kernel.monitor": any
+  "kernel.demonitor": any
+  "kernel.measure_mana": any
+  "kernel.set_mana_limit": any
 }
 
-export enum direction_22 {
-  Value0 = 0,
-  Value1 = 1,
-  Value2 = 2,
-  Value3 = 3
+export enum direction_15 {
+  NONE = 0,
+  IN = 1,
+  OUT = 2,
+  BOTH = 3
 }
 
-export interface range_30 {
-  gt_key: Uint8Array
-  gt_inclusive: boolean
-  lt_key: Uint8Array
-  lt_inclusive: boolean
-  limit: number
+export interface process_event_pointer_21 {
+  event_pointer: any | null
 }
 
-export interface pair_vector_unsigned_char_allocator_unsigned_char_vector_unsigned_char_allocator_unsigned_char_32 {
-  first: Uint8Array
-  second: Uint8Array
+export interface process_killed_event_22 {}
+
+export interface process_event_23 {
+  process: number
 }
 
-export interface batch_operation_36 {
-  range: range_30
-  value: Uint8Array
-  type: type_37
+export interface process_error_event_24 {
+  error: string
 }
 
-export enum type_37 {
-  Value0 = 0,
-  Value1 = 1
-}
+export interface read_annotation_25 {}
 
-export interface read_annotation_38 {}
-
-export interface member_annotation_39 {}
+export interface member_annotation_26 {}
 
 
 export function createGeneratedTypeRegistry(): { registry: TypeRegistry, types: { [key: string]: TypeDescription } } {
@@ -121,194 +100,117 @@ export function createGeneratedTypeRegistry(): { registry: TypeRegistry, types: 
   })
   types['map_8'] = map_8
 
-  const Kernel_9 = TypeDescription.create({
-    name: "Kernel",
+  const kernel_9 = TypeDescription.create({
+    name: "kernel",
     kind: TypeKind.Object,
   })
-  types['Kernel_9'] = Kernel_9
+  types['kernel_9'] = kernel_9
 
-  const Kernel_create_process_10 = TypeDescription.create({
-    name: "Kernel.create_process",
+  const kernel_spawn_10 = TypeDescription.create({
+    name: "kernel.spawn",
     kind: TypeKind.Function,
   })
-  types['Kernel_create_process_10'] = Kernel_create_process_10
+  types['kernel_spawn_10'] = kernel_spawn_10
 
-  const Kernel_destroy_process_11 = TypeDescription.create({
-    name: "Kernel.destroy_process",
+  const kernel_resurect_11 = TypeDescription.create({
+    name: "kernel.resurect",
     kind: TypeKind.Function,
   })
-  types['Kernel_destroy_process_11'] = Kernel_destroy_process_11
+  types['kernel_resurect_11'] = kernel_resurect_11
 
-  const Kernel_load_module_12 = TypeDescription.create({
-    name: "Kernel.load_module",
+  const kernel_save_12 = TypeDescription.create({
+    name: "kernel.save",
     kind: TypeKind.Function,
   })
-  types['Kernel_load_module_12'] = Kernel_load_module_12
+  types['kernel_save_12'] = kernel_save_12
 
-  const Kernel_load_memory_13 = TypeDescription.create({
-    name: "Kernel.load_memory",
+  const kernel_kill_13 = TypeDescription.create({
+    name: "kernel.kill",
     kind: TypeKind.Function,
   })
-  types['Kernel_load_memory_13'] = Kernel_load_memory_13
+  types['kernel_kill_13'] = kernel_kill_13
 
-  const Kernel_store_memory_14 = TypeDescription.create({
-    name: "Kernel.store_memory",
+  const kernel_bind_14 = TypeDescription.create({
+    name: "kernel.bind",
     kind: TypeKind.Function,
   })
-  types['Kernel_store_memory_14'] = Kernel_store_memory_14
+  types['kernel_bind_14'] = kernel_bind_14
 
-  const Kernel_initialize_process_15 = TypeDescription.create({
-    name: "Kernel.initialize_process",
-    kind: TypeKind.Function,
-  })
-  types['Kernel_initialize_process_15'] = Kernel_initialize_process_15
-
-  const Kernel_finalize_process_16 = TypeDescription.create({
-    name: "Kernel.finalize_process",
-    kind: TypeKind.Function,
-  })
-  types['Kernel_finalize_process_16'] = Kernel_finalize_process_16
-
-  const Kernel_send_message_17 = TypeDescription.create({
-    name: "Kernel.send_message",
-    kind: TypeKind.Function,
-  })
-  types['Kernel_send_message_17'] = Kernel_send_message_17
-
-  const Kernel_request_18 = TypeDescription.create({
-    name: "Kernel.request",
-    kind: TypeKind.Function,
-  })
-  types['Kernel_request_18'] = Kernel_request_18
-
-  const Kernel_link_19 = TypeDescription.create({
-    name: "Kernel.link",
-    kind: TypeKind.Function,
-  })
-  types['Kernel_link_19'] = Kernel_link_19
-
-  const Kernel_unlink_20 = TypeDescription.create({
-    name: "Kernel.unlink",
-    kind: TypeKind.Function,
-  })
-  types['Kernel_unlink_20'] = Kernel_unlink_20
-
-  const Kernel_connect_21 = TypeDescription.create({
-    name: "Kernel.connect",
-    kind: TypeKind.Function,
-  })
-  types['Kernel_connect_21'] = Kernel_connect_21
-
-  const direction_22 = TypeDescription.create({
+  const direction_15 = TypeDescription.create({
     name: "direction",
     kind: TypeKind.Enum,
     enumMembers: [],
   })
-  types['direction_22'] = direction_22
+  types['direction_15'] = direction_15
 
-  const Kernel_disconnect_23 = TypeDescription.create({
-    name: "Kernel.disconnect",
+  const kernel_unbind_16 = TypeDescription.create({
+    name: "kernel.unbind",
     kind: TypeKind.Function,
   })
-  types['Kernel_disconnect_23'] = Kernel_disconnect_23
+  types['kernel_unbind_16'] = kernel_unbind_16
 
-  const Kernel_monitor_24 = TypeDescription.create({
-    name: "Kernel.monitor",
+  const kernel_monitor_17 = TypeDescription.create({
+    name: "kernel.monitor",
     kind: TypeKind.Function,
   })
-  types['Kernel_monitor_24'] = Kernel_monitor_24
+  types['kernel_monitor_17'] = kernel_monitor_17
 
-  const Kernel_unmonitor_25 = TypeDescription.create({
-    name: "Kernel.unmonitor",
+  const kernel_demonitor_18 = TypeDescription.create({
+    name: "kernel.demonitor",
     kind: TypeKind.Function,
   })
-  types['Kernel_unmonitor_25'] = Kernel_unmonitor_25
+  types['kernel_demonitor_18'] = kernel_demonitor_18
 
-  const Kernel_set_26 = TypeDescription.create({
-    name: "Kernel.set",
+  const kernel_measure_mana_19 = TypeDescription.create({
+    name: "kernel.measure_mana",
     kind: TypeKind.Function,
   })
-  types['Kernel_set_26'] = Kernel_set_26
+  types['kernel_measure_mana_19'] = kernel_measure_mana_19
 
-  const Kernel_get_27 = TypeDescription.create({
-    name: "Kernel.get",
+  const kernel_set_mana_limit_20 = TypeDescription.create({
+    name: "kernel.set_mana_limit",
     kind: TypeKind.Function,
   })
-  types['Kernel_get_27'] = Kernel_get_27
+  types['kernel_set_mana_limit_20'] = kernel_set_mana_limit_20
 
-  const Kernel_remove_28 = TypeDescription.create({
-    name: "Kernel.remove",
-    kind: TypeKind.Function,
-  })
-  types['Kernel_remove_28'] = Kernel_remove_28
-
-  const Kernel_range_get_29 = TypeDescription.create({
-    name: "Kernel.range_get",
-    kind: TypeKind.Function,
-  })
-  types['Kernel_range_get_29'] = Kernel_range_get_29
-
-  const range_30 = TypeDescription.create({
-    name: "range",
+  const process_event_pointer_21 = TypeDescription.create({
+    name: "process_event_pointer",
     kind: TypeKind.Object,
   })
-  types['range_30'] = range_30
+  types['process_event_pointer_21'] = process_event_pointer_21
 
-  const vector_pair_vector_unsigned_char_allocator_unsigned_char_vector_unsigned_char_allocator_unsigned_char_allocator_pair_vector_unsigned_char_allocator_unsigned_char_vector_unsigned_char_allocator_unsigned_char_31 = TypeDescription.create({
-    name: "vector<pair<vector<unsigned char, allocator<unsigned char>>, vector<unsigned char, allocator<unsigned char>>>, allocator<pair<vector<unsigned char, allocator<unsigned char>>, vector<unsigned char, allocator<unsigned char>>>>>",
-    kind: TypeKind.Array,
+  const process_killed_event_22 = TypeDescription.create({
+    name: "process_killed_event",
+    kind: TypeKind.DynamicObject,
+    bases: [],
   })
-  types['vector_pair_vector_unsigned_char_allocator_unsigned_char_vector_unsigned_char_allocator_unsigned_char_allocator_pair_vector_unsigned_char_allocator_unsigned_char_vector_unsigned_char_allocator_unsigned_char_31'] = vector_pair_vector_unsigned_char_allocator_unsigned_char_vector_unsigned_char_allocator_unsigned_char_allocator_pair_vector_unsigned_char_allocator_unsigned_char_vector_unsigned_char_allocator_unsigned_char_31
+  types['process_killed_event_22'] = process_killed_event_22
 
-  const pair_vector_unsigned_char_allocator_unsigned_char_vector_unsigned_char_allocator_unsigned_char_32 = TypeDescription.create({
-    name: "pair<vector<unsigned char, allocator<unsigned char>>, vector<unsigned char, allocator<unsigned char>>>",
+  const process_event_23 = TypeDescription.create({
+    name: "process_event",
     kind: TypeKind.Object,
   })
-  types['pair_vector_unsigned_char_allocator_unsigned_char_vector_unsigned_char_allocator_unsigned_char_32'] = pair_vector_unsigned_char_allocator_unsigned_char_vector_unsigned_char_allocator_unsigned_char_32
+  types['process_event_23'] = process_event_23
 
-  const Kernel_range_remove_33 = TypeDescription.create({
-    name: "Kernel.range_remove",
-    kind: TypeKind.Function,
+  const process_error_event_24 = TypeDescription.create({
+    name: "process_error_event",
+    kind: TypeKind.DynamicObject,
+    bases: [],
   })
-  types['Kernel_range_remove_33'] = Kernel_range_remove_33
+  types['process_error_event_24'] = process_error_event_24
 
-  const Kernel_batch_update_34 = TypeDescription.create({
-    name: "Kernel.batch_update",
-    kind: TypeKind.Function,
-  })
-  types['Kernel_batch_update_34'] = Kernel_batch_update_34
-
-  const vector_batch_operation_allocator_batch_operation_35 = TypeDescription.create({
-    name: "vector<batch_operation, allocator<batch_operation>>",
-    kind: TypeKind.Array,
-  })
-  types['vector_batch_operation_allocator_batch_operation_35'] = vector_batch_operation_allocator_batch_operation_35
-
-  const batch_operation_36 = TypeDescription.create({
-    name: "batch_operation",
-    kind: TypeKind.Object,
-  })
-  types['batch_operation_36'] = batch_operation_36
-
-  const type_37 = TypeDescription.create({
-    name: "type",
-    kind: TypeKind.Enum,
-    enumMembers: [],
-  })
-  types['type_37'] = type_37
-
-  const read_annotation_38 = TypeDescription.create({
+  const read_annotation_25 = TypeDescription.create({
     name: "read_annotation",
     kind: TypeKind.DynamicObject,
     bases: [],
   })
-  types['read_annotation_38'] = read_annotation_38
+  types['read_annotation_25'] = read_annotation_25
 
-  const member_annotation_39 = TypeDescription.create({
+  const member_annotation_26 = TypeDescription.create({
     name: "member_annotation",
     kind: TypeKind.DynamicObject,
   })
-  types['member_annotation_39'] = member_annotation_39
+  types['member_annotation_26'] = member_annotation_26
 
   // Register all types to preserve indices
   registry.registerType(void_0)
@@ -320,211 +222,161 @@ export function createGeneratedTypeRegistry(): { registry: TypeRegistry, types: 
   registry.registerType(binary_6)
   registry.registerType(pointer_7)
   registry.registerType(map_8)
-  registry.registerType(Kernel_9)
-  registry.registerType(Kernel_create_process_10)
-  registry.registerType(Kernel_destroy_process_11)
-  registry.registerType(Kernel_load_module_12)
-  registry.registerType(Kernel_load_memory_13)
-  registry.registerType(Kernel_store_memory_14)
-  registry.registerType(Kernel_initialize_process_15)
-  registry.registerType(Kernel_finalize_process_16)
-  registry.registerType(Kernel_send_message_17)
-  registry.registerType(Kernel_request_18)
-  registry.registerType(Kernel_link_19)
-  registry.registerType(Kernel_unlink_20)
-  registry.registerType(Kernel_connect_21)
-  registry.registerType(direction_22)
-  registry.registerType(Kernel_disconnect_23)
-  registry.registerType(Kernel_monitor_24)
-  registry.registerType(Kernel_unmonitor_25)
-  registry.registerType(Kernel_set_26)
-  registry.registerType(Kernel_get_27)
-  registry.registerType(Kernel_remove_28)
-  registry.registerType(Kernel_range_get_29)
-  registry.registerType(range_30)
-  registry.registerType(vector_pair_vector_unsigned_char_allocator_unsigned_char_vector_unsigned_char_allocator_unsigned_char_allocator_pair_vector_unsigned_char_allocator_unsigned_char_vector_unsigned_char_allocator_unsigned_char_31)
-  registry.registerType(pair_vector_unsigned_char_allocator_unsigned_char_vector_unsigned_char_allocator_unsigned_char_32)
-  registry.registerType(Kernel_range_remove_33)
-  registry.registerType(Kernel_batch_update_34)
-  registry.registerType(vector_batch_operation_allocator_batch_operation_35)
-  registry.registerType(batch_operation_36)
-  registry.registerType(type_37)
-  registry.registerType(read_annotation_38)
-  registry.registerType(member_annotation_39)
+  registry.registerType(kernel_9)
+  registry.registerType(kernel_spawn_10)
+  registry.registerType(kernel_resurect_11)
+  registry.registerType(kernel_save_12)
+  registry.registerType(kernel_kill_13)
+  registry.registerType(kernel_bind_14)
+  registry.registerType(direction_15)
+  registry.registerType(kernel_unbind_16)
+  registry.registerType(kernel_monitor_17)
+  registry.registerType(kernel_demonitor_18)
+  registry.registerType(kernel_measure_mana_19)
+  registry.registerType(kernel_set_mana_limit_20)
+  registry.registerType(process_event_pointer_21)
+  registry.registerType(process_killed_event_22)
+  registry.registerType(process_event_23)
+  registry.registerType(process_error_event_24)
+  registry.registerType(read_annotation_25)
+  registry.registerType(member_annotation_26)
 
   // Fill enumMembers, bases, item/key
-  Kernel_create_process_10.item = uint_1
+  kernel_spawn_10.item = uint_1
 
-  Kernel_destroy_process_11.item = void_0
+  kernel_resurect_11.item = uint_1
 
-  Kernel_load_module_12.item = void_0
+  kernel_save_12.item = binary_6
 
-  Kernel_load_memory_13.item = void_0
+  kernel_kill_13.item = void_0
 
-  Kernel_store_memory_14.item = void_0
+  kernel_bind_14.item = void_0
 
-  Kernel_initialize_process_15.item = void_0
-
-  Kernel_finalize_process_16.item = void_0
-
-  Kernel_send_message_17.item = void_0
-
-  Kernel_request_18.item = binary_6
-
-  Kernel_link_19.item = void_0
-
-  Kernel_unlink_20.item = void_0
-
-  Kernel_connect_21.item = void_0
-
-  direction_22.enumMembers = [
-    { name: undefined, value: undefined },
-    { name: undefined, value: undefined },
-    { name: undefined, value: undefined },
-    { name: undefined, value: undefined },
+  direction_15.enumMembers = [
+    { name: "NONE", value: 0 },
+    { name: "IN", value: 1 },
+    { name: "OUT", value: 2 },
+    { name: "BOTH", value: 3 },
   ]
 
-  Kernel_disconnect_23.item = void_0
+  kernel_unbind_16.item = void_0
 
-  Kernel_monitor_24.item = void_0
+  kernel_monitor_17.item = void_0
 
-  Kernel_unmonitor_25.item = void_0
+  kernel_demonitor_18.item = void_0
 
-  Kernel_set_26.item = void_0
+  kernel_measure_mana_19.item = uint_1
 
-  Kernel_get_27.item = binary_6
+  kernel_set_mana_limit_20.item = void_0
 
-  Kernel_remove_28.item = void_0
-
-  Kernel_range_get_29.item = vector_pair_vector_unsigned_char_allocator_unsigned_char_vector_unsigned_char_allocator_unsigned_char_allocator_pair_vector_unsigned_char_allocator_unsigned_char_vector_unsigned_char_allocator_unsigned_char_31
-
-  vector_pair_vector_unsigned_char_allocator_unsigned_char_vector_unsigned_char_allocator_unsigned_char_allocator_pair_vector_unsigned_char_allocator_unsigned_char_vector_unsigned_char_allocator_unsigned_char_31.item = pair_vector_unsigned_char_allocator_unsigned_char_vector_unsigned_char_allocator_unsigned_char_32
-
-  Kernel_range_remove_33.item = void_0
-
-  Kernel_batch_update_34.item = void_0
-
-  vector_batch_operation_allocator_batch_operation_35.item = batch_operation_36
-
-  type_37.enumMembers = [
-    { name: undefined, value: undefined },
-    { name: undefined, value: undefined },
+  process_killed_event_22.bases = [
+    process_event_23,
   ]
 
-  read_annotation_38.bases = [
-    member_annotation_39,
+  process_error_event_24.bases = [
+    process_event_23,
+  ]
+
+  read_annotation_25.bases = [
+    member_annotation_26,
   ]
 
   // Fill members (after all types exist)
-  Kernel_9.members = [
+  kernel_9.members = [
     {
-      name: "Kernel.create_process",
-      type: Kernel_create_process_10,
+      name: "kernel.spawn",
+      type: kernel_spawn_10,
       annotations: [],
     },
     {
-      name: "Kernel.destroy_process",
-      type: Kernel_destroy_process_11,
+      name: "kernel.resurect",
+      type: kernel_resurect_11,
       annotations: [],
     },
     {
-      name: "Kernel.load_module",
-      type: Kernel_load_module_12,
+      name: "kernel.save",
+      type: kernel_save_12,
       annotations: [],
     },
     {
-      name: "Kernel.load_memory",
-      type: Kernel_load_memory_13,
+      name: "kernel.kill",
+      type: kernel_kill_13,
       annotations: [],
     },
     {
-      name: "Kernel.store_memory",
-      type: Kernel_store_memory_14,
+      name: "kernel.bind",
+      type: kernel_bind_14,
       annotations: [],
     },
     {
-      name: "Kernel.initialize_process",
-      type: Kernel_initialize_process_15,
+      name: "kernel.unbind",
+      type: kernel_unbind_16,
       annotations: [],
     },
     {
-      name: "Kernel.finalize_process",
-      type: Kernel_finalize_process_16,
+      name: "kernel.monitor",
+      type: kernel_monitor_17,
       annotations: [],
     },
     {
-      name: "Kernel.send_message",
-      type: Kernel_send_message_17,
+      name: "kernel.demonitor",
+      type: kernel_demonitor_18,
       annotations: [],
     },
     {
-      name: "Kernel.request",
-      type: Kernel_request_18,
+      name: "kernel.measure_mana",
+      type: kernel_measure_mana_19,
       annotations: [],
     },
     {
-      name: "Kernel.link",
-      type: Kernel_link_19,
-      annotations: [],
-    },
-    {
-      name: "Kernel.unlink",
-      type: Kernel_unlink_20,
-      annotations: [],
-    },
-    {
-      name: "Kernel.connect",
-      type: Kernel_connect_21,
-      annotations: [],
-    },
-    {
-      name: "Kernel.disconnect",
-      type: Kernel_disconnect_23,
-      annotations: [],
-    },
-    {
-      name: "Kernel.monitor",
-      type: Kernel_monitor_24,
-      annotations: [],
-    },
-    {
-      name: "Kernel.unmonitor",
-      type: Kernel_unmonitor_25,
-      annotations: [],
-    },
-    {
-      name: "Kernel.set",
-      type: Kernel_set_26,
-      annotations: [],
-    },
-    {
-      name: "Kernel.get",
-      type: Kernel_get_27,
-      annotations: [],
-    },
-    {
-      name: "Kernel.remove",
-      type: Kernel_remove_28,
-      annotations: [],
-    },
-    {
-      name: "Kernel.range_get",
-      type: Kernel_range_get_29,
-      annotations: [],
-    },
-    {
-      name: "Kernel.range_remove",
-      type: Kernel_range_remove_33,
-      annotations: [],
-    },
-    {
-      name: "Kernel.batch_update",
-      type: Kernel_batch_update_34,
+      name: "kernel.set_mana_limit",
+      type: kernel_set_mana_limit_20,
       annotations: [],
     },
   ]
 
-  Kernel_destroy_process_11.members = [
+  kernel_spawn_10.members = [
+    {
+      name: "code",
+      type: binary_6,
+      annotations: [],
+    },
+    {
+      name: "memory_limit",
+      type: uint_1,
+      annotations: [],
+    },
+    {
+      name: "mana_limit",
+      type: uint_1,
+      annotations: [],
+    },
+  ]
+
+  kernel_resurect_11.members = [
+    {
+      name: "code",
+      type: binary_6,
+      annotations: [],
+    },
+    {
+      name: "memory",
+      type: binary_6,
+      annotations: [],
+    },
+    {
+      name: "memory_limit",
+      type: uint_1,
+      annotations: [],
+    },
+    {
+      name: "mana_limit",
+      type: uint_1,
+      annotations: [],
+    },
+  ]
+
+  kernel_save_12.members = [
     {
       name: "id",
       type: uint_1,
@@ -532,194 +384,15 @@ export function createGeneratedTypeRegistry(): { registry: TypeRegistry, types: 
     },
   ]
 
-  Kernel_load_module_12.members = [
+  kernel_kill_13.members = [
     {
-      name: "process_id",
-      type: uint_1,
-      annotations: [],
-    },
-    {
-      name: "module_id",
-      type: uint_1,
-      annotations: [],
-    },
-    {
-      name: "db_name",
-      type: string_5,
-      annotations: [],
-    },
-    {
-      name: "table_name",
-      type: string_5,
-      annotations: [],
-    },
-    {
-      name: "key",
-      type: binary_6,
-      annotations: [],
-    },
-    {
-      name: "flags",
+      name: "id",
       type: uint_1,
       annotations: [],
     },
   ]
 
-  Kernel_load_memory_13.members = [
-    {
-      name: "process_id",
-      type: uint_1,
-      annotations: [],
-    },
-    {
-      name: "db_name",
-      type: string_5,
-      annotations: [],
-    },
-    {
-      name: "table_name",
-      type: string_5,
-      annotations: [],
-    },
-    {
-      name: "key",
-      type: binary_6,
-      annotations: [],
-    },
-  ]
-
-  Kernel_store_memory_14.members = [
-    {
-      name: "process_id",
-      type: uint_1,
-      annotations: [],
-    },
-    {
-      name: "db_name",
-      type: string_5,
-      annotations: [],
-    },
-    {
-      name: "table_name",
-      type: string_5,
-      annotations: [],
-    },
-    {
-      name: "key",
-      type: binary_6,
-      annotations: [],
-    },
-  ]
-
-  Kernel_initialize_process_15.members = [
-    {
-      name: "process_id",
-      type: uint_1,
-      annotations: [],
-    },
-  ]
-
-  Kernel_finalize_process_16.members = [
-    {
-      name: "process_id",
-      type: uint_1,
-      annotations: [],
-    },
-  ]
-
-  Kernel_send_message_17.members = [
-    {
-      name: "process_id",
-      type: uint_1,
-      annotations: [],
-    },
-    {
-      name: "channel_id",
-      type: uint_1,
-      annotations: [],
-    },
-    {
-      name: "message",
-      type: binary_6,
-      annotations: [],
-    },
-  ]
-
-  Kernel_request_18.members = [
-    {
-      name: "process_id",
-      type: uint_1,
-      annotations: [],
-    },
-    {
-      name: "channel_id",
-      type: uint_1,
-      annotations: [],
-    },
-    {
-      name: "message",
-      type: binary_6,
-      annotations: [],
-    },
-  ]
-
-  Kernel_link_19.members = [
-    {
-      name: "process_id",
-      type: uint_1,
-      annotations: [],
-    },
-    {
-      name: "from_module",
-      type: uint_1,
-      annotations: [],
-    },
-    {
-      name: "to_module",
-      type: uint_1,
-      annotations: [],
-    },
-    {
-      name: "from_name",
-      type: string_5,
-      annotations: [],
-    },
-    {
-      name: "to_name",
-      type: string_5,
-      annotations: [],
-    },
-  ]
-
-  Kernel_unlink_20.members = [
-    {
-      name: "process_id",
-      type: uint_1,
-      annotations: [],
-    },
-    {
-      name: "from_module",
-      type: uint_1,
-      annotations: [],
-    },
-    {
-      name: "to_module",
-      type: uint_1,
-      annotations: [],
-    },
-    {
-      name: "from_name",
-      type: string_5,
-      annotations: [],
-    },
-    {
-      name: "to_name",
-      type: string_5,
-      annotations: [],
-    },
-  ]
-
-  Kernel_connect_21.members = [
+  kernel_bind_14.members = [
     {
       name: "process_from",
       type: uint_1,
@@ -742,12 +415,12 @@ export function createGeneratedTypeRegistry(): { registry: TypeRegistry, types: 
     },
     {
       name: "direction",
-      type: direction_22,
+      type: direction_15,
       annotations: [],
     },
   ]
 
-  Kernel_disconnect_23.members = [
+  kernel_unbind_16.members = [
     {
       name: "process_from",
       type: uint_1,
@@ -770,12 +443,12 @@ export function createGeneratedTypeRegistry(): { registry: TypeRegistry, types: 
     },
     {
       name: "direction",
-      type: direction_22,
+      type: direction_15,
       annotations: [],
     },
   ]
 
-  Kernel_monitor_24.members = [
+  kernel_monitor_17.members = [
     {
       name: "target",
       type: uint_1,
@@ -793,7 +466,7 @@ export function createGeneratedTypeRegistry(): { registry: TypeRegistry, types: 
     },
   ]
 
-  Kernel_unmonitor_25.members = [
+  kernel_demonitor_18.members = [
     {
       name: "target",
       type: uint_1,
@@ -811,174 +484,47 @@ export function createGeneratedTypeRegistry(): { registry: TypeRegistry, types: 
     },
   ]
 
-  Kernel_set_26.members = [
+  kernel_measure_mana_19.members = [
     {
-      name: "db_name",
-      type: string_5,
+      name: "process",
+      type: uint_1,
       annotations: [],
     },
     {
-      name: "table_name",
-      type: string_5,
-      annotations: [],
-    },
-    {
-      name: "key",
-      type: binary_6,
-      annotations: [],
-    },
-    {
-      name: "value",
-      type: binary_6,
-      annotations: [],
-    },
-  ]
-
-  Kernel_get_27.members = [
-    {
-      name: "db_name",
-      type: string_5,
-      annotations: [],
-    },
-    {
-      name: "table_name",
-      type: string_5,
-      annotations: [],
-    },
-    {
-      name: "key",
-      type: binary_6,
-      annotations: [],
-    },
-  ]
-
-  Kernel_remove_28.members = [
-    {
-      name: "db_name",
-      type: string_5,
-      annotations: [],
-    },
-    {
-      name: "table_name",
-      type: string_5,
-      annotations: [],
-    },
-    {
-      name: "key",
-      type: binary_6,
-      annotations: [],
-    },
-  ]
-
-  Kernel_range_get_29.members = [
-    {
-      name: "db_name",
-      type: string_5,
-      annotations: [],
-    },
-    {
-      name: "table_name",
-      type: string_5,
-      annotations: [],
-    },
-    {
-      name: "range",
-      type: range_30,
-      annotations: [],
-    },
-  ]
-
-  range_30.members = [
-    {
-      name: "gt_key",
-      type: binary_6,
-      annotations: [],
-    },
-    {
-      name: "gt_inclusive",
-      type: bool_4,
-      annotations: [],
-    },
-    {
-      name: "lt_key",
-      type: binary_6,
-      annotations: [],
-    },
-    {
-      name: "lt_inclusive",
-      type: bool_4,
-      annotations: [],
-    },
-    {
-      name: "limit",
+      name: "new_mana",
       type: uint_1,
       annotations: [],
     },
   ]
 
-  pair_vector_unsigned_char_allocator_unsigned_char_vector_unsigned_char_allocator_unsigned_char_32.members = [
+  kernel_set_mana_limit_20.members = [
     {
-      name: "first",
-      type: binary_6,
-      annotations: [],
-    },
-    {
-      name: "second",
-      type: binary_6,
+      name: "mana_limit",
+      type: uint_1,
       annotations: [],
     },
   ]
 
-  Kernel_range_remove_33.members = [
+  process_event_pointer_21.members = [
     {
-      name: "db_name",
-      type: string_5,
-      annotations: [],
-    },
-    {
-      name: "table_name",
-      type: string_5,
-      annotations: [],
-    },
-    {
-      name: "range",
-      type: range_30,
+      name: "event_pointer",
+      type: pointer_7,
       annotations: [],
     },
   ]
 
-  Kernel_batch_update_34.members = [
+  process_event_23.members = [
     {
-      name: "db_name",
-      type: string_5,
-      annotations: [],
-    },
-    {
-      name: "table_name",
-      type: string_5,
-      annotations: [],
-    },
-    {
-      name: "operations",
-      type: vector_batch_operation_allocator_batch_operation_35,
+      name: "process",
+      type: uint_1,
       annotations: [],
     },
   ]
 
-  batch_operation_36.members = [
+  process_error_event_24.members = [
     {
-      name: "range",
-      type: range_30,
-      annotations: [],
-    },
-    {
-      name: "value",
-      type: binary_6,
-      annotations: [],
-    },
-    {
-      name: "type",
-      type: type_37,
+      name: "error",
+      type: string_5,
       annotations: [],
     },
   ]
@@ -987,128 +533,62 @@ export function createGeneratedTypeRegistry(): { registry: TypeRegistry, types: 
 }
 
 // Empty method implementations
-async function Kernel_create_process_10_impl(
+async function kernel_spawn_10_impl(
+  code: Uint8Array,
+  memory_limit: number,
+  mana_limit: number
 ): Promise<number> {
   /// TODO: implement
   return Promise.resolve(0)
 }
 
-async function Kernel_destroy_process_11_impl(
+async function kernel_resurect_11_impl(
+  code: Uint8Array,
+  memory: Uint8Array,
+  memory_limit: number,
+  mana_limit: number
+): Promise<number> {
+  /// TODO: implement
+  return Promise.resolve(0)
+}
+
+async function kernel_save_12_impl(
+  id: number
+): Promise<Uint8Array> {
+  /// TODO: implement
+  return Promise.resolve(null as any as Uint8Array)
+}
+
+async function kernel_kill_13_impl(
   id: number
 ): Promise<void> {
   /// TODO: implement
   return Promise.resolve()
 }
 
-async function Kernel_load_module_12_impl(
-  process_id: number,
-  module_id: number,
-  db_name: string,
-  table_name: string,
-  key: Uint8Array,
-  flags: number
-): Promise<void> {
-  /// TODO: implement
-  return Promise.resolve()
-}
-
-async function Kernel_load_memory_13_impl(
-  process_id: number,
-  db_name: string,
-  table_name: string,
-  key: Uint8Array
-): Promise<void> {
-  /// TODO: implement
-  return Promise.resolve()
-}
-
-async function Kernel_store_memory_14_impl(
-  process_id: number,
-  db_name: string,
-  table_name: string,
-  key: Uint8Array
-): Promise<void> {
-  /// TODO: implement
-  return Promise.resolve()
-}
-
-async function Kernel_initialize_process_15_impl(
-  process_id: number
-): Promise<void> {
-  /// TODO: implement
-  return Promise.resolve()
-}
-
-async function Kernel_finalize_process_16_impl(
-  process_id: number
-): Promise<void> {
-  /// TODO: implement
-  return Promise.resolve()
-}
-
-async function Kernel_send_message_17_impl(
-  process_id: number,
-  channel_id: number,
-  message: Uint8Array
-): Promise<void> {
-  /// TODO: implement
-  return Promise.resolve()
-}
-
-async function Kernel_request_18_impl(
-  process_id: number,
-  channel_id: number,
-  message: Uint8Array
-): Promise<Uint8Array> {
-  /// TODO: implement
-  return Promise.resolve(null as any as Uint8Array)
-}
-
-async function Kernel_link_19_impl(
-  process_id: number,
-  from_module: number,
-  to_module: number,
-  from_name: string,
-  to_name: string
-): Promise<void> {
-  /// TODO: implement
-  return Promise.resolve()
-}
-
-async function Kernel_unlink_20_impl(
-  process_id: number,
-  from_module: number,
-  to_module: number,
-  from_name: string,
-  to_name: string
-): Promise<void> {
-  /// TODO: implement
-  return Promise.resolve()
-}
-
-async function Kernel_connect_21_impl(
+async function kernel_bind_14_impl(
   process_from: number,
   channel_from: number,
   process_to: number,
   channel_to: number,
-  direction: direction_22
+  direction: direction_15
 ): Promise<void> {
   /// TODO: implement
   return Promise.resolve()
 }
 
-async function Kernel_disconnect_23_impl(
+async function kernel_unbind_16_impl(
   process_from: number,
   channel_from: number,
   process_to: number,
   channel_to: number,
-  direction: direction_22
+  direction: direction_15
 ): Promise<void> {
   /// TODO: implement
   return Promise.resolve()
 }
 
-async function Kernel_monitor_24_impl(
+async function kernel_monitor_17_impl(
   target: number,
   monitor: number,
   monitor_channel: number
@@ -1117,7 +597,7 @@ async function Kernel_monitor_24_impl(
   return Promise.resolve()
 }
 
-async function Kernel_unmonitor_25_impl(
+async function kernel_demonitor_18_impl(
   target: number,
   monitor: number,
   monitor_channel: number
@@ -1126,56 +606,16 @@ async function Kernel_unmonitor_25_impl(
   return Promise.resolve()
 }
 
-async function Kernel_set_26_impl(
-  db_name: string,
-  table_name: string,
-  key: Uint8Array,
-  value: Uint8Array
-): Promise<void> {
+async function kernel_measure_mana_19_impl(
+  process: number,
+  new_mana: number
+): Promise<number> {
   /// TODO: implement
-  return Promise.resolve()
+  return Promise.resolve(0)
 }
 
-async function Kernel_get_27_impl(
-  db_name: string,
-  table_name: string,
-  key: Uint8Array
-): Promise<Uint8Array> {
-  /// TODO: implement
-  return Promise.resolve(null as any as Uint8Array)
-}
-
-async function Kernel_remove_28_impl(
-  db_name: string,
-  table_name: string,
-  key: Uint8Array
-): Promise<void> {
-  /// TODO: implement
-  return Promise.resolve()
-}
-
-async function Kernel_range_get_29_impl(
-  db_name: string,
-  table_name: string,
-  range: range_30
-): Promise<pair_vector_unsigned_char_allocator_unsigned_char_vector_unsigned_char_allocator_unsigned_char_32[]> {
-  /// TODO: implement
-  return Promise.resolve([])
-}
-
-async function Kernel_range_remove_33_impl(
-  db_name: string,
-  table_name: string,
-  range: range_30
-): Promise<void> {
-  /// TODO: implement
-  return Promise.resolve()
-}
-
-async function Kernel_batch_update_34_impl(
-  db_name: string,
-  table_name: string,
-  operations: batch_operation_36[]
+async function kernel_set_mana_limit_20_impl(
+  mana_limit: number
 ): Promise<void> {
   /// TODO: implement
   return Promise.resolve()
@@ -1183,27 +623,16 @@ async function Kernel_batch_update_34_impl(
 
 export function implementMethods(result: ReturnType<typeof createGeneratedTypeRegistry>): void {
   const { registry, types } = result
-  types['Kernel_create_process_10'].implementation = Kernel_create_process_10_impl
-  types['Kernel_destroy_process_11'].implementation = Kernel_destroy_process_11_impl
-  types['Kernel_load_module_12'].implementation = Kernel_load_module_12_impl
-  types['Kernel_load_memory_13'].implementation = Kernel_load_memory_13_impl
-  types['Kernel_store_memory_14'].implementation = Kernel_store_memory_14_impl
-  types['Kernel_initialize_process_15'].implementation = Kernel_initialize_process_15_impl
-  types['Kernel_finalize_process_16'].implementation = Kernel_finalize_process_16_impl
-  types['Kernel_send_message_17'].implementation = Kernel_send_message_17_impl
-  types['Kernel_request_18'].implementation = Kernel_request_18_impl
-  types['Kernel_link_19'].implementation = Kernel_link_19_impl
-  types['Kernel_unlink_20'].implementation = Kernel_unlink_20_impl
-  types['Kernel_connect_21'].implementation = Kernel_connect_21_impl
-  types['Kernel_disconnect_23'].implementation = Kernel_disconnect_23_impl
-  types['Kernel_monitor_24'].implementation = Kernel_monitor_24_impl
-  types['Kernel_unmonitor_25'].implementation = Kernel_unmonitor_25_impl
-  types['Kernel_set_26'].implementation = Kernel_set_26_impl
-  types['Kernel_get_27'].implementation = Kernel_get_27_impl
-  types['Kernel_remove_28'].implementation = Kernel_remove_28_impl
-  types['Kernel_range_get_29'].implementation = Kernel_range_get_29_impl
-  types['Kernel_range_remove_33'].implementation = Kernel_range_remove_33_impl
-  types['Kernel_batch_update_34'].implementation = Kernel_batch_update_34_impl
+  types['kernel_spawn_10'].implementation = kernel_spawn_10_impl
+  types['kernel_resurect_11'].implementation = kernel_resurect_11_impl
+  types['kernel_save_12'].implementation = kernel_save_12_impl
+  types['kernel_kill_13'].implementation = kernel_kill_13_impl
+  types['kernel_bind_14'].implementation = kernel_bind_14_impl
+  types['kernel_unbind_16'].implementation = kernel_unbind_16_impl
+  types['kernel_monitor_17'].implementation = kernel_monitor_17_impl
+  types['kernel_demonitor_18'].implementation = kernel_demonitor_18_impl
+  types['kernel_measure_mana_19'].implementation = kernel_measure_mana_19_impl
+  types['kernel_set_mana_limit_20'].implementation = kernel_set_mana_limit_20_impl
 }
 
 export function setupServer(): TypeRegistry {
