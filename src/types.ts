@@ -28,7 +28,7 @@ export interface DatabaseBackend {
 }
 
 export type process_id = number
-export type channel_id = number
+export type socket_id = number
 export type module_id = number
 
 export enum ModuleFlags {

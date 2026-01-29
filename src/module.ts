@@ -26,7 +26,7 @@ export class Module {
 
   socketConnections: Array<SocketConnection> = [];
 
-  private sendMessageCallback?: (channel: number, buffer: Uint8Array) => void;
+  private sendMessageCallback?: (socket: number, buffer: Uint8Array) => void;
   private moduleSockets?: ModuleSockets;
   
   constructor(wasm: WebAssembly.Module) {
@@ -95,14 +95,14 @@ export class Module {
     }
   }
 
-  setSendMessageCallback(callback: (channel: number, buffer: Uint8Array) => void) {
+  setSendMessageCallback(callback: (socket: number, buffer: Uint8Array) => void) {
     this.sendMessageCallback = callback;
   }
 
   /**
    * Send RPC request into socket 0 input buffer and trigger processing inside WASM.
    */
-  handleMessage(_channel: number, data: ArrayBuffer | Uint8Array): void {
+  handleMessage(_socket: number, data: ArrayBuffer | Uint8Array): void {
     if (!this.instance || !this.moduleSockets) {
       throw new Error('Module not instantiated');
     }

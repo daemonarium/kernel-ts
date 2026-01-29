@@ -399,7 +399,7 @@ export function createGeneratedTypeRegistry(): { registry: TypeRegistry, types: 
       annotations: [],
     },
     {
-      name: "channel_from",
+      name: "socket_from",
       type: uint_1,
       annotations: [],
     },
@@ -409,7 +409,7 @@ export function createGeneratedTypeRegistry(): { registry: TypeRegistry, types: 
       annotations: [],
     },
     {
-      name: "channel_to",
+      name: "socket_to",
       type: uint_1,
       annotations: [],
     },
@@ -427,7 +427,7 @@ export function createGeneratedTypeRegistry(): { registry: TypeRegistry, types: 
       annotations: [],
     },
     {
-      name: "channel_from",
+      name: "socket_from",
       type: uint_1,
       annotations: [],
     },
@@ -437,7 +437,7 @@ export function createGeneratedTypeRegistry(): { registry: TypeRegistry, types: 
       annotations: [],
     },
     {
-      name: "channel_to",
+      name: "socket_to",
       type: uint_1,
       annotations: [],
     },
@@ -460,7 +460,7 @@ export function createGeneratedTypeRegistry(): { registry: TypeRegistry, types: 
       annotations: [],
     },
     {
-      name: "monitor_channel",
+      name: "monitor_socket",
       type: uint_1,
       annotations: [],
     },
@@ -478,7 +478,7 @@ export function createGeneratedTypeRegistry(): { registry: TypeRegistry, types: 
       annotations: [],
     },
     {
-      name: "monitor_channel",
+      name: "monitor_socket",
       type: uint_1,
       annotations: [],
     },
@@ -568,9 +568,9 @@ async function kernel_kill_13_impl(
 
 async function kernel_bind_14_impl(
   process_from: number,
-  channel_from: number,
+  socket_from: number,
   process_to: number,
-  channel_to: number,
+  socket_to: number,
   direction: direction_15
 ): Promise<void> {
   /// TODO: implement
@@ -579,9 +579,9 @@ async function kernel_bind_14_impl(
 
 async function kernel_unbind_16_impl(
   process_from: number,
-  channel_from: number,
+  socket_from: number,
   process_to: number,
-  channel_to: number,
+  socket_to: number,
   direction: direction_15
 ): Promise<void> {
   /// TODO: implement
@@ -591,7 +591,7 @@ async function kernel_unbind_16_impl(
 async function kernel_monitor_17_impl(
   target: number,
   monitor: number,
-  monitor_channel: number
+  monitor_socket: number
 ): Promise<void> {
   /// TODO: implement
   return Promise.resolve()
@@ -600,7 +600,7 @@ async function kernel_monitor_17_impl(
 async function kernel_demonitor_18_impl(
   target: number,
   monitor: number,
-  monitor_channel: number
+  monitor_socket: number
 ): Promise<void> {
   /// TODO: implement
   return Promise.resolve()

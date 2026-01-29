@@ -1,9 +1,11 @@
-import Process from './process.js'
+import type Process from './Process.js'
+import { ModuleProcess } from './ModuleProcess.js'
+import { LocalProcess } from './LocalProcess.js'
 
 import { createGeneratedTypeRegistry, direction_15 } from './kernelApi.js'
 
 import type { 
-  process_id, channel_id
+  process_id, socket_id
 } from './types.js'
 import { Direction } from './types.js'
 import { TypeRegistry } from '@wa-os/ts-rpc'
@@ -39,9 +41,41 @@ export class Kernel {
       this.processSearchPosition = processId
     }
     
-    const process = new Process(this, processId, memory_limit, mana_limit)
+    const process = new ModuleProcess(this, processId, memory_limit, mana_limit)
     await process.setModuleCode(code)
     await process.start()
+    
+    if (processId >= this.processes.length) {
+      this.processes.push(process)
+    } else {
+      this.processes[processId] = process
+    }
+    
+    return processId
+  }
+
+  async spawnLocal(mana_limit: number = 1000000): Promise<process_id> {
+    let processId: process_id | undefined
+    
+    // Search for empty slot
+    if (this.processes.length > 0) {
+      const searchStart = this.processSearchPosition
+      do {
+        this.processSearchPosition = (this.processSearchPosition + 1) % this.processes.length
+        if (this.processes[this.processSearchPosition] === null) {
+          processId = this.processSearchPosition
+          break
+        }
+      } while (this.processSearchPosition !== searchStart)
+    }
+    
+    // If no empty slot found, append to end
+    if (processId === undefined) {
+      processId = this.processes.length
+      this.processSearchPosition = processId
+    }
+    
+    const process = new LocalProcess(this, processId, mana_limit)
     
     if (processId >= this.processes.length) {
       this.processes.push(process)
@@ -73,7 +107,7 @@ export class Kernel {
       this.processSearchPosition = processId
     }
     
-    const process = new Process(this, processId, memory_limit, mana_limit)
+    const process = new ModuleProcess(this, processId, memory_limit, mana_limit)
     await process.setModuleCode(code)
     await process.setMemory(memory)
     await process.start()
@@ -104,8 +138,8 @@ export class Kernel {
     this.processes[id] = null
   }
 
-  async bind(process_from: process_id, channel_from: channel_id, 
-             process_to: process_id, channel_to: channel_id, 
+  async bind(process_from: process_id, socket_from: socket_id, 
+             process_to: process_id, socket_to: socket_id, 
              direction: direction_15): Promise<void> {
     const processFrom = this.processes[process_from]
     const processTo = this.processes[process_to]
@@ -116,11 +150,11 @@ export class Kernel {
     const dir = direction as unknown as Direction
     if(dir === Direction.NONE) throw new Error(`Direction cannot be NONE`)
     
-    processFrom.bind(processTo, channel_from, channel_to, dir)
+    processFrom.bind(processTo, socket_from, socket_to, dir)
   }
 
-  async unbind(process_from: process_id, channel_from: channel_id,
-               process_to: process_id, channel_to: channel_id,
+  async unbind(process_from: process_id, socket_from: socket_id,
+               process_to: process_id, socket_to: socket_id,
                direction: direction_15): Promise<void> {
     const processFrom = this.processes[process_from]
     const processTo = this.processes[process_to]
@@ -131,23 +165,23 @@ export class Kernel {
     const dir = direction as unknown as Direction
     if(dir === Direction.NONE) throw new Error(`Direction cannot be NONE`)
     
-    processFrom.unbind(processTo, channel_from, channel_to, dir)
+    processFrom.unbind(processTo, socket_from, socket_to, dir)
   }
 
-  async monitor(target: process_id, monitor: process_id, monitor_channel: channel_id): Promise<void> {
+  async monitor(target: process_id, monitor: process_id, monitor_socket: socket_id): Promise<void> {
     const targetProcess = this.processes[target]
     const monitorProcess = this.processes[monitor]
     if(!targetProcess) throw new Error(`Target process ${target} not found`)
     if(!monitorProcess) throw new Error(`Monitor process ${monitor} not found`)
-    monitorProcess.monitor(targetProcess, monitor_channel)
+    monitorProcess.monitor(targetProcess, monitor_socket)
   }
 
-  async demonitor(target: process_id, monitor: process_id, monitor_channel: channel_id): Promise<void> {
+  async demonitor(target: process_id, monitor: process_id, monitor_socket: socket_id): Promise<void> {
     const targetProcess = this.processes[target]
     const monitorProcess = this.processes[monitor]
     if(!targetProcess) throw new Error(`Target process ${target} not found`)
     if(!monitorProcess) throw new Error(`Monitor process ${monitor} not found`)
-    monitorProcess.demonitor(targetProcess, monitor_channel)
+    monitorProcess.demonitor(targetProcess, monitor_socket)
   }
 
   async measure_mana(process: process_id, new_mana: number): Promise<number> {
@@ -186,24 +220,24 @@ export class Kernel {
     ): Promise<void> => this.kill(id)
     
     types['kernel_bind_14'].implementation = (
-      process_from: number, channel_from: number,
-      process_to: number, channel_to: number,
+      process_from: number, socket_from: number,
+      process_to: number, socket_to: number,
       direction: direction_15
-    ): Promise<void> => this.bind(process_from, channel_from, process_to, channel_to, direction)
+    ): Promise<void> => this.bind(process_from, socket_from, process_to, socket_to, direction)
     
     types['kernel_unbind_16'].implementation = (
-      process_from: number, channel_from: number,
-      process_to: number, channel_to: number,
+      process_from: number, socket_from: number,
+      process_to: number, socket_to: number,
       direction: direction_15
-    ): Promise<void> => this.unbind(process_from, channel_from, process_to, channel_to, direction)
+    ): Promise<void> => this.unbind(process_from, socket_from, process_to, socket_to, direction)
     
     types['kernel_monitor_17'].implementation = (
-      target: number, monitor: number, monitor_channel: number
-    ): Promise<void> => this.monitor(target, monitor, monitor_channel)
+      target: number, monitor: number, monitor_socket: number
+    ): Promise<void> => this.monitor(target, monitor, monitor_socket)
     
     types['kernel_demonitor_18'].implementation = (
-      target: number, monitor: number, monitor_channel: number
-    ): Promise<void> => this.demonitor(target, monitor, monitor_channel)
+      target: number, monitor: number, monitor_socket: number
+    ): Promise<void> => this.demonitor(target, monitor, monitor_socket)
     
     types['kernel_measure_mana_19'].implementation = (
       process: number, new_mana: number
