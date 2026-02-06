@@ -35,7 +35,7 @@ export class WaosImports {
       this.process.handleError(error instanceof Error ? error : new Error(String(error)))
     }
   }
-  waos_socket_drain(socket: number) {
+  waos_socket_input_drain(socket: number) {
     try {
       const socketConnection = this.process.socketConnections[socket]
       if(socketConnection?.connectedTo) {
@@ -176,7 +176,7 @@ export class ModuleProcess implements Process {
     }
   }
 
-  readRawRpcDescription(): Uint8Array {
+  readRawRpcDescription(socket: socket_id = 0): Uint8Array {
     try {
       if (!this.instance) {
         throw new Error('Process instance not initialized')
@@ -191,11 +191,11 @@ export class ModuleProcess implements Process {
         throw new Error('Failed to allocate memory for rpc description')
       }
       /// call exported rpc_description to get the description
-      const rpcDescription = this.instance.exports.rpc_description as ((pointer: number) => number) | undefined
+      const rpcDescription = this.instance.exports.rpc_description as ((socket: number, pointer: number) => number) | undefined
       if (!rpcDescription) {
         throw new Error('rpc_description not exported from WASM module')
       }
-      const descriptionSize = rpcDescription(pointer)
+      const descriptionSize = rpcDescription(socket, pointer)
       if (!descriptionSize) {
         throw new Error('Failed to get rpc description')
       }
@@ -212,11 +212,11 @@ export class ModuleProcess implements Process {
     }
   }
 
-  getRpcDescription(): TypeRegistry | undefined {
+  getRpcDescription(socket: socket_id = 0): TypeRegistry | undefined {
     if(this.rpcDescription) return this.rpcDescription
     if(!this.instance?.exports.rpc_description) return undefined
 
-    this.rpcDescription = deserializeTypeRegistry(this.readRawRpcDescription())
+    this.rpcDescription = deserializeTypeRegistry(this.readRawRpcDescription(socket))
     if (this.rpcDescription) {
       this.rpcDescription.assignMethodIds()
     }
@@ -276,9 +276,9 @@ export class ModuleProcess implements Process {
       if (!this.instance) {
         throw new Error('Process instance not initialized')
       }
-      const handleDrain = this.instance.exports.waos_socket_drain as (socket: number) => void | undefined
+      const handleDrain = this.instance.exports.waos_socket_output_drain as (socket: number) => void | undefined
       if (!handleDrain) {
-        throw new Error('waos_socket_drain not exported from WASM module')
+        throw new Error('waos_socket_output_drain not exported from WASM module')
       }
       handleDrain(socket_id)
     } catch (error) {

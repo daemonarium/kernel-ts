@@ -32,7 +32,7 @@ export class LocalProcess implements Process {
   socketConnections: Array<SocketConnection> = []
   monitors: Array<ProcessMonitor> = []
 
-  rpcDescription?: TypeRegistry
+  rpcDescriptions?: Array<TypeRegistry>
   socketCallbacks: Map<number, SocketCallbacks> = new Map()
 
   manaUsed: number = 0
@@ -52,12 +52,12 @@ export class LocalProcess implements Process {
     }
   }
 
-  getRpcDescription(): TypeRegistry | undefined {
-    return this.rpcDescription
+  getRpcDescription(socket: socket_id = 0): TypeRegistry | undefined {
+    return this.rpcDescriptions?.[socket]
   }
 
-  setRpcDescription(registry: TypeRegistry): void {
-    this.rpcDescription = registry
+  setRpcDescription(socket: socket_id, registry: TypeRegistry): void {
+    this.rpcDescriptions![socket] = registry
   }
 
   getSocket(index: socket_id): Socket | null {
@@ -137,10 +137,10 @@ export class LocalProcess implements Process {
   }
 
   sendMessage(socket: socket_id, value: TypedValue): void {
-    if (!this.rpcDescription) {
+    if (!this.getRpcDescription(socket)) {
       throw new Error('RPC description not set. Call setRpcDescription() first.')
     }
-    this.serializeToSocket(socket, value, this.rpcDescription)
+    this.serializeToSocket(socket, value, this.getRpcDescription(socket))
   }
 
   deserializeFromSocket(socketIndex: number, typeRegistry: TypeRegistry): TypedValue | null {
