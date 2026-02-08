@@ -32,7 +32,7 @@ export class LocalProcess implements Process {
   socketConnections: Array<SocketConnection> = []
   monitors: Array<ProcessMonitor> = []
 
-  rpcDescriptions?: Array<TypeRegistry>
+  rpcDescriptions?: Array<TypeRegistry> = []
   socketCallbacks: Map<number, SocketCallbacks> = new Map()
 
   manaUsed: number = 0
@@ -65,7 +65,40 @@ export class LocalProcess implements Process {
   }
 
   createSocket(index: number, options: SocketOptions): LocalSocket {
-    return this.localSockets.createSocket(index, options)
+    const socketOptions = {
+      ...options,
+      flushCallback: (socket: number) => {
+        try {
+          const socketConnection = this.socketConnections[socket]
+          if (socketConnection?.connectedTo) {
+            const copiedBytes = socketConnection.socket.outputBuffer
+              .copyTo(socketConnection.connectedTo.socket.inputBuffer)
+            if (copiedBytes > 0) {
+              /// TODO: use scheduler when under load
+              socketConnection.connectedTo.process.handleData(socketConnection.connectedTo.socket.index)
+            }
+          }
+        } catch (error) {
+          this.handleError(error instanceof Error ? error : new Error(String(error)))
+        }
+      },
+      drainCallback: (socket: number) => {
+        try {
+          const socketConnection = this.socketConnections[socket]
+          if (socketConnection?.connectedTo) {
+            const copiedBytes = socketConnection.connectedTo.socket.inputBuffer
+              .copyTo(socketConnection.socket.outputBuffer)
+            if (copiedBytes > 0) {
+              /// TODO: use scheduler when under load
+              socketConnection.connectedTo.process.handleDrain(socketConnection.connectedTo.socket.index)
+            }
+          }
+        } catch (error) {
+          this.handleError(error instanceof Error ? error : new Error(String(error)))
+        }
+      }
+    } as SocketOptions
+    return this.localSockets.createSocket(index, socketOptions)
   }
 
   createSocketWithCallbacks(
@@ -74,7 +107,40 @@ export class LocalProcess implements Process {
     onMessage?: (socket: number, size: number, message: Uint8Array) => void,
     onDrained?: (socket: number) => void
   ): LocalSocket {
-    const socket = this.localSockets.createSocket(index, options)
+    const socketOptions = {
+      ...options,
+      flushCallback: (socket: number) => {
+        try {
+          const socketConnection = this.socketConnections[socket]
+          if (socketConnection?.connectedTo) {
+            const copiedBytes = socketConnection.socket.outputBuffer
+              .copyTo(socketConnection.connectedTo.socket.inputBuffer)
+            if (copiedBytes > 0) {
+              /// TODO: use scheduler when under load
+              socketConnection.connectedTo.process.handleData(socketConnection.connectedTo.socket.index)
+            }
+          }
+        } catch (error) {
+          this.handleError(error instanceof Error ? error : new Error(String(error)))
+        }
+      },
+      drainCallback: (socket: number) => {
+        try {
+          const socketConnection = this.socketConnections[socket]
+          if (socketConnection?.connectedTo) {
+            const copiedBytes = socketConnection.connectedTo.socket.inputBuffer
+              .copyTo(socketConnection.socket.outputBuffer)
+            if (copiedBytes > 0) {
+              /// TODO: use scheduler when under load
+              socketConnection.connectedTo.process.handleDrain(socketConnection.connectedTo.socket.index)
+            }
+          }
+        } catch (error) {
+          this.handleError(error instanceof Error ? error : new Error(String(error)))
+        }
+      }
+    } as SocketOptions
+    const socket = this.localSockets.createSocket(index, socketOptions)
     if (onMessage || onDrained) {
       this.socketCallbacks.set(socket.index, { onMessage, onDrained })
     }
@@ -94,15 +160,56 @@ export class LocalProcess implements Process {
       return
     }
 
+    // Cast to LocalSocket since we're using LocalSockets
+    const localSocket = socket as LocalSocket
+
     const callbacks = this.socketCallbacks.get(socket_id)
-    if (callbacks?.onMessage) {
-      const readableBytes = socket.inputBuffer.readableBytes()
-      if (readableBytes > 0) {
-        const message = new Uint8Array(readableBytes)
-        const bytesRead = socket.inputBuffer.read(message, readableBytes)
-        if (bytesRead > 0) {
-          callbacks.onMessage(socket_id, bytesRead, message)
-        }
+    if (!callbacks?.onMessage) {
+      return
+    }
+
+    while (true) {
+      // Read message length (uint32_t, 4 bytes)
+      const LENGTH_SIZE = 4
+      if (localSocket.inputBuffer.readableBytes() < LENGTH_SIZE) {
+        localSocket.drain()
+        return // not enough data yet
+      }
+
+      // Peek at the length
+      const lengthBuffer = new Uint8Array(LENGTH_SIZE)
+      const bytesPeeked = localSocket.peek(0, lengthBuffer, LENGTH_SIZE)
+      if (bytesPeeked < LENGTH_SIZE) {
+        localSocket.drain()
+        return // not enough data yet
+      }
+
+      // Convert to uint32 (little-endian, matching C++)
+      const dataView = new DataView(lengthBuffer.buffer, lengthBuffer.byteOffset, lengthBuffer.byteLength)
+      const messageLength = dataView.getUint32(0, true)
+
+      // Check if we have enough data for the full message
+      const available = localSocket.inputBuffer.readableBytes()
+      if (available < LENGTH_SIZE + messageLength) {
+        localSocket.reserveForReading(messageLength + LENGTH_SIZE)
+        localSocket.drain()
+        return // wait for full message
+      }
+
+      // Consume length prefix
+      localSocket.skipRead(LENGTH_SIZE)
+
+      // Read the message payload
+      const message = new Uint8Array(messageLength)
+      const bytesRead = localSocket.inputBuffer.read(message, messageLength)
+      if (bytesRead > 0) {
+        callbacks.onMessage(socket_id, bytesRead, message)
+      }
+
+      // If no more data, drain and return
+      if (localSocket.inputBuffer.readableBytes() === 0) {
+        localSocket.drain()
+        return
       }
     }
   }
@@ -258,6 +365,12 @@ export class LocalProcess implements Process {
         process: processTo,
         socket: targetSocket
       }
+      targetConnection.connectedFrom = {
+        processId: this.id,
+        socketIndex: socket_id,
+        process: this,
+        socket: thisSocket
+      }
     }
 
     if (direction === Direction.IN || direction === Direction.BOTH) {
@@ -266,6 +379,12 @@ export class LocalProcess implements Process {
         socketIndex: socket_to,
         process: processTo,
         socket: targetSocket
+      }
+      targetConnection.connectedTo = {
+        processId: this.id,
+        socketIndex: socket_id,
+        process: this,
+        socket: thisSocket
       }
     }
   }
@@ -288,6 +407,7 @@ export class LocalProcess implements Process {
       if (thisConnection.connectedTo?.processId === processTo.id && 
           thisConnection.connectedTo?.socketIndex === socket_to) {
         thisConnection.connectedTo = undefined
+        targetConnection.connectedFrom = undefined
         removedOut = true
       }
     }
@@ -296,6 +416,7 @@ export class LocalProcess implements Process {
       if (thisConnection.connectedFrom?.processId === processTo.id && 
           thisConnection.connectedFrom?.socketIndex === socket_to) {
         thisConnection.connectedFrom = undefined
+        targetConnection.connectedTo = undefined
         removedIn = true
       }
     }

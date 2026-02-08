@@ -12,46 +12,42 @@ import type { process_event_pointer_21, process_killed_event_22, process_error_e
 
 export { SocketConnection, SocketConnectionDestination, ProcessMonitor }
 
-export class WaosImports {
-
-  process: ModuleProcess
-
-  constructor(process: ModuleProcess) {
-    this.process = process
-  }
-
-  waos_socket_flush(socket: number) {
-    try {
-      const socketConnection = this.process.socketConnections[socket]
-      if(socketConnection?.connectedTo) {
-        const copiedBytes = socketConnection.socket.outputBuffer
-          .copyTo(socketConnection.connectedTo.socket.inputBuffer)
-        if(copiedBytes > 0) {
-          /// TODO: use scheduler when under load
-          socketConnection.connectedTo.process.handleData(socketConnection.connectedTo.socket.index)
+function wasmImports(process: ModuleProcess) {
+  return {
+    waos_socket_flush(socket: number) {
+      debugger;
+      try {
+        const socketConnection = process.socketConnections[socket]
+        if(socketConnection?.connectedTo) {
+          const copiedBytes = socketConnection.socket.outputBuffer
+            .copyTo(socketConnection.connectedTo.socket.inputBuffer)
+          if(copiedBytes > 0) {
+            /// TODO: use scheduler when under load
+            socketConnection.connectedTo.process.handleData(socketConnection.connectedTo.socket.index)
+          }
         }
+      } catch (error) {
+        process.handleError(error instanceof Error ? error : new Error(String(error)))
       }
-    } catch (error) {
-      this.process.handleError(error instanceof Error ? error : new Error(String(error)))
-    }
-  }
-  waos_socket_input_drain(socket: number) {
-    try {
-      const socketConnection = this.process.socketConnections[socket]
-      if(socketConnection?.connectedTo) {
-        const copiedBytes = socketConnection.connectedTo.socket.inputBuffer
-          .copyTo(socketConnection.socket.outputBuffer)
-        if(copiedBytes > 0) {
-          /// TODO: use scheduler when under load
-          socketConnection.connectedTo.process.handleDrain(socketConnection.connectedTo.socket.index)
+    },
+    waos_socket_input_drain(socket: number) {
+      try {
+        const socketConnection = process.socketConnections[socket]
+        if(socketConnection?.connectedTo) {
+          const copiedBytes = socketConnection.connectedTo.socket.inputBuffer
+            .copyTo(socketConnection.socket.outputBuffer)
+          if(copiedBytes > 0) {
+            /// TODO: use scheduler when under load
+            socketConnection.connectedTo.process.handleDrain(socketConnection.connectedTo.socket.index)
+          }
         }
+      } catch (error) {
+        process.handleError(error instanceof Error ? error : new Error(String(error)))
       }
-    } catch (error) {
-      this.process.handleError(error instanceof Error ? error : new Error(String(error)))
+    },
+    waos_use_mana(mana: number) {
+      process.useMana(mana)
     }
-  }
-  waos_use_mana(mana: number) {
-    this.process.useMana(mana)
   }
 }
 
@@ -142,7 +138,7 @@ export class ModuleProcess implements Process {
         env: {
           memory: this.memory,
         },
-        waos: new WaosImports(this) as unknown as Record<string, any>
+        waos: wasmImports(this) as unknown as Record<string, any>
       }
 
       this.instance = await WebAssembly.instantiate(this.module, this.imports)
@@ -155,14 +151,6 @@ export class ModuleProcess implements Process {
         throw error
       }
 
-      // initialize sockets view
-      this.moduleSockets = await ModuleSockets.fromInstance(this.instance, this.memory)
-
-      /// TODO: think about connecting kernel sockets to process:
-      /// socket 0 - requests from other processes (and responses to them)
-      /// socket 1 - requests to kernel (and responses to them)
-      /// socket 2 - debug messages
-
       try {
         //@ts-ignore
         this.instance.exports.start()
@@ -170,6 +158,10 @@ export class ModuleProcess implements Process {
         this.handleError(error instanceof Error ? error : new Error(String(error)))
         throw error
       }
+
+      // initialize sockets view
+      this.moduleSockets = await ModuleSockets.fromInstance(this.instance, this.memory)
+      
     } catch (error) {
       this.handleError(error instanceof Error ? error : new Error(String(error)))
       throw error
@@ -259,6 +251,7 @@ export class ModuleProcess implements Process {
       if (!handleData) {
         throw new Error('waos_socket_data not exported from WASM module')
       }
+      debugger;
       handleData(socket_id)
     } catch (error) {
       this.handleError(error instanceof Error ? error : new Error(String(error)))
@@ -465,6 +458,12 @@ export class ModuleProcess implements Process {
         process: processTo,
         socket: targetSocket
       }
+      targetConnection.connectedFrom = {
+        processId: this.id,
+        socketIndex: socket_id,
+        process: this,
+        socket: thisSocket
+      }
     }
 
     if (direction === Direction.IN || direction === Direction.BOTH) {
@@ -474,6 +473,12 @@ export class ModuleProcess implements Process {
         socketIndex: socket_to,
         process: processTo,
         socket: targetSocket
+      }
+      targetConnection.connectedTo = {
+        processId: this.id,
+        socketIndex: socket_id,
+        process: this,
+        socket: thisSocket
       }
     }
   }
@@ -509,6 +514,7 @@ export class ModuleProcess implements Process {
       if (thisConnection.connectedTo?.processId === processTo.id && 
           thisConnection.connectedTo?.socketIndex === socket_to) {
         thisConnection.connectedTo = undefined
+        targetConnection.connectedFrom = undefined
         removedOut = true
       }
     }
@@ -518,6 +524,7 @@ export class ModuleProcess implements Process {
       if (thisConnection.connectedFrom?.processId === processTo.id && 
           thisConnection.connectedFrom?.socketIndex === socket_to) {
         thisConnection.connectedFrom = undefined
+        targetConnection.connectedTo = undefined
         removedIn = true
       }
     }

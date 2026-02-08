@@ -4,4 +4,5 @@ export { LocalProcess } from './LocalProcess.js'
 export { SocketConnection, SocketConnectionDestination, ProcessMonitor } from './Process.js'
 export { Kernel } from './kernel.js'
 export * from './types.js'
-export * from './kernelApi.js'
+import * as kernelApi from './kernelApi.js'
+export { kernelApi }
