@@ -1,5 +1,6 @@
 import type { Kernel } from './kernel.js'
-import Process, { SocketConnection, SocketConnectionDestination, ProcessMonitor } from './Process.js'
+import Process, { SocketConnection, ProcessMonitor } from './Process.js'
+import type { SocketConnectionDestination } from './Process.js'
 
 import type { 
   DatabaseBackend, process_id, socket_id, module_id, Range, BatchOperation, 
@@ -15,7 +16,7 @@ export { SocketConnection, SocketConnectionDestination, ProcessMonitor }
 function wasmImports(process: ModuleProcess) {
   return {
     waos_socket_flush(socket: number) {
-      debugger;
+      //debugger;
       try {
         const socketConnection = process.socketConnections[socket]
         if(socketConnection?.connectedTo) {
@@ -251,7 +252,6 @@ export class ModuleProcess implements Process {
       if (!handleData) {
         throw new Error('waos_socket_data not exported from WASM module')
       }
-      debugger;
       handleData(socket_id)
     } catch (error) {
       this.handleError(error instanceof Error ? error : new Error(String(error)))

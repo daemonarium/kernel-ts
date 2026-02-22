@@ -19,11 +19,6 @@ import {
 import { serializeValueByType, deserializeValueByType } from "@wa-os/ts-rpc/src/valueSerialization.js"
 import type { process_event_pointer_21, process_killed_event_22, process_error_event_24 } from './kernelApi.js'
 
-interface SocketCallbacks {
-  onMessage?: (socket: number, size: number, message: Uint8Array) => void
-  onDrained?: (socket: number) => void
-}
-
 export class LocalProcess implements Process {
   kernel: Kernel
   id: process_id
@@ -33,7 +28,6 @@ export class LocalProcess implements Process {
   monitors: Array<ProcessMonitor> = []
 
   rpcDescriptions?: Array<TypeRegistry> = []
-  socketCallbacks: Map<number, SocketCallbacks> = new Map()
 
   manaUsed: number = 0
   manaLimit: number = 1000000
@@ -101,52 +95,6 @@ export class LocalProcess implements Process {
     return this.localSockets.createSocket(index, socketOptions)
   }
 
-  createSocketWithCallbacks(
-    index: number,
-    options: SocketOptions,
-    onMessage?: (socket: number, size: number, message: Uint8Array) => void,
-    onDrained?: (socket: number) => void
-  ): LocalSocket {
-    const socketOptions = {
-      ...options,
-      flushCallback: (socket: number) => {
-        try {
-          const socketConnection = this.socketConnections[socket]
-          if (socketConnection?.connectedTo) {
-            const copiedBytes = socketConnection.socket.outputBuffer
-              .copyTo(socketConnection.connectedTo.socket.inputBuffer)
-            if (copiedBytes > 0) {
-              /// TODO: use scheduler when under load
-              socketConnection.connectedTo.process.handleData(socketConnection.connectedTo.socket.index)
-            }
-          }
-        } catch (error) {
-          this.handleError(error instanceof Error ? error : new Error(String(error)))
-        }
-      },
-      drainCallback: (socket: number) => {
-        try {
-          const socketConnection = this.socketConnections[socket]
-          if (socketConnection?.connectedTo) {
-            const copiedBytes = socketConnection.connectedTo.socket.inputBuffer
-              .copyTo(socketConnection.socket.outputBuffer)
-            if (copiedBytes > 0) {
-              /// TODO: use scheduler when under load
-              socketConnection.connectedTo.process.handleDrain(socketConnection.connectedTo.socket.index)
-            }
-          }
-        } catch (error) {
-          this.handleError(error instanceof Error ? error : new Error(String(error)))
-        }
-      }
-    } as SocketOptions
-    const socket = this.localSockets.createSocket(index, socketOptions)
-    if (onMessage || onDrained) {
-      this.socketCallbacks.set(socket.index, { onMessage, onDrained })
-    }
-    return socket
-  }
-
   handleError(error: string | Error): void {
     const errorMessage = error instanceof Error ? error.message : error
     this.kernel.kill(this.id, errorMessage).catch((killError) => {
@@ -155,70 +103,19 @@ export class LocalProcess implements Process {
   }
 
   handleData(socket_id: number): void {
-    const socket = this.getSocket(socket_id)
-    if (!socket) {
+    const localSocket = this.localSockets.getSocket(socket_id)
+    if (!localSocket) {
       return
     }
-
-    // Cast to LocalSocket since we're using LocalSockets
-    const localSocket = socket as LocalSocket
-
-    const callbacks = this.socketCallbacks.get(socket_id)
-    if (!callbacks?.onMessage) {
-      return
-    }
-
-    while (true) {
-      // Read message length (uint32_t, 4 bytes)
-      const LENGTH_SIZE = 4
-      if (localSocket.inputBuffer.readableBytes() < LENGTH_SIZE) {
-        localSocket.drain()
-        return // not enough data yet
-      }
-
-      // Peek at the length
-      const lengthBuffer = new Uint8Array(LENGTH_SIZE)
-      const bytesPeeked = localSocket.peek(0, lengthBuffer, LENGTH_SIZE)
-      if (bytesPeeked < LENGTH_SIZE) {
-        localSocket.drain()
-        return // not enough data yet
-      }
-
-      // Convert to uint32 (little-endian, matching C++)
-      const dataView = new DataView(lengthBuffer.buffer, lengthBuffer.byteOffset, lengthBuffer.byteLength)
-      const messageLength = dataView.getUint32(0, true)
-
-      // Check if we have enough data for the full message
-      const available = localSocket.inputBuffer.readableBytes()
-      if (available < LENGTH_SIZE + messageLength) {
-        localSocket.reserveForReading(messageLength + LENGTH_SIZE)
-        localSocket.drain()
-        return // wait for full message
-      }
-
-      // Consume length prefix
-      localSocket.skipRead(LENGTH_SIZE)
-
-      // Read the message payload
-      const message = new Uint8Array(messageLength)
-      const bytesRead = localSocket.inputBuffer.read(message, messageLength)
-      if (bytesRead > 0) {
-        callbacks.onMessage(socket_id, bytesRead, message)
-      }
-
-      // If no more data, drain and return
-      if (localSocket.inputBuffer.readableBytes() === 0) {
-        localSocket.drain()
-        return
-      }
-    }
+    localSocket.handleData()
   }
 
   handleDrain(socket_id: number): void {
-    const callbacks = this.socketCallbacks.get(socket_id)
-    if (callbacks?.onDrained) {
-      callbacks.onDrained(socket_id)
+    const localSocket = this.localSockets.getSocket(socket_id)
+    if (!localSocket) {
+      return
     }
+    localSocket.handleDrain()
   }
 
   serializeToSocket(socket: socket_id, value: TypedValue, typeRegistry: TypeRegistry): void {

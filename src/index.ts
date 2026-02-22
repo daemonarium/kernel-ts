@@ -1,8 +1,11 @@
 export type { default as Process } from './Process.js'
 export { ModuleProcess } from './ModuleProcess.js'
 export { LocalProcess } from './LocalProcess.js'
-export { SocketConnection, SocketConnectionDestination, ProcessMonitor } from './Process.js'
+export { SocketConnection, ProcessMonitor } from './Process.js'
+export type { SocketConnectionDestination } from './Process.js'
 export { Kernel } from './kernel.js'
-export * from './types.js'
+export type { Range, BatchOperation, DatabaseBackend } from './types.js'
+export { BatchOperationType, ModuleFlags, Direction } from './types.js'
+export type { process_id, socket_id, module_id } from './types.js'
 import * as kernelApi from './kernelApi.js'
 export { kernelApi }
