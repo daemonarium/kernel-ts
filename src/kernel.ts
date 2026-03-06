@@ -21,6 +21,7 @@ export class Kernel {
   }
 
   async spawn(code: Uint8Array, memory_limit: number = 2048, mana_limit: number = 1000000): Promise<process_id> {
+    console.log(`[kernel] spawn(code=${code.byteLength} bytes, mem=${memory_limit}, mana=${mana_limit})`)
     let processId: process_id | undefined
     
     // Search for empty slot
@@ -42,14 +43,35 @@ export class Kernel {
     }
     
     const process = new ModuleProcess(this, processId, memory_limit, mana_limit)
-    await process.setModuleCode(code)
-    await process.start()
+    try {
+      await process.setModuleCode(code)
+    } catch (error) {
+      // @ts-ignore
+      const hashBuffer = await crypto.subtle.digest('SHA-256', code);             
+      const hashHex = Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
+      console.error(`Error setting module code for code with length ${code.byteLength} bytes and hash ${hashHex}`, error)
+      // print code as hex in chunks of 16 bytes    
+/*       console.log("code:", code)
+      for (let i = 0; i < code.byteLength; i += 16) {
+        // @ts-ignore
+        console.error(i.toString(16).padStart(4,'0'), Array.from(code.slice(i, i + 16)).map(b => b.toString(16).padStart(2, '0')).join(' '))
+      } */
+      throw error
+    }
+    try {
+      await process.start()
+    } catch (error) {
+      console.error('Error starting process', error)
+      throw error
+    }
     
     if (processId >= this.processes.length) {
       this.processes.push(process)
     } else {
       this.processes[processId] = process
     }
+
+    console.log("[kernel] spawned")
     
     return processId
   }
@@ -140,7 +162,8 @@ export class Kernel {
 
   async bind(process_from: process_id, socket_from: socket_id, 
              process_to: process_id, socket_to: socket_id, 
-             direction: direction_15): Promise<void> {;
+             direction: direction_15): Promise<void> {
+    debugger;
     const processFrom = this.processes[process_from]
     const processTo = this.processes[process_to]
     if(!processFrom) throw new Error(`Process ${process_from} not found`)

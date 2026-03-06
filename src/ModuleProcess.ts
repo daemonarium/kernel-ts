@@ -13,6 +13,77 @@ import type { process_event_pointer_21, process_killed_event_22, process_error_e
 
 export { SocketConnection, SocketConnectionDestination, ProcessMonitor }
 
+function wasiImports(process: ModuleProcess) {
+  const decoder = new TextDecoder()
+
+  function readIovs(iovsPtr: number, iovsLen: number): string {
+    const mem = new DataView(process.memory!.buffer)
+    const bytes = new Uint8Array(process.memory!.buffer)
+    let totalStr = ''
+    let totalWritten = 0
+    for (let i = 0; i < iovsLen; i++) {
+      const base = iovsPtr + i * 8
+      const buf = mem.getUint32(base, true)
+      const bufLen = mem.getUint32(base + 4, true)
+      totalStr += decoder.decode(bytes.slice(buf, buf + bufLen))
+      totalWritten += bufLen
+    }
+    return totalStr
+  }
+
+  return {
+    fd_write(fd: number, iovsPtr: number, iovsLen: number, nwrittenPtr: number): number {
+      const str = readIovs(iovsPtr, iovsLen)
+      const mem = new DataView(process.memory!.buffer)
+      const byteLength = new TextEncoder().encode(str).length
+      mem.setUint32(nwrittenPtr, byteLength, true)
+      if (fd === 1) {
+        process.stdout += str
+        if (str.includes('\n')) {
+          const lines = process.stdout.split('\n')
+          for (let i = 0; i < lines.length - 1; i++) {
+            console.log(`[${process.id}] ${lines[i]}`)
+          }
+          process.stdout = lines[lines.length - 1]
+        }
+      } else if (fd === 2) {
+        process.stderr += str
+        if (str.includes('\n')) {
+          const lines = process.stderr.split('\n')
+          for (let i = 0; i < lines.length - 1; i++) {
+            console.error(`[${process.id}] ${lines[i]}`)
+          }
+          process.stderr = lines[lines.length - 1]
+        }
+      }
+      return 0
+    },
+    fd_read(fd: number, iovsPtr: number, iovsLen: number, nreadPtr: number): number {
+      const mem = new DataView(process.memory!.buffer)
+      mem.setUint32(nreadPtr, 0, true)
+      return 0
+    },
+    fd_seek(fd: number, offsetLow: number, offsetHigh: number, whence: number, newoffsetPtr: number): number {
+      const mem = new DataView(process.memory!.buffer)
+      mem.setUint32(newoffsetPtr, 0, true)
+      mem.setUint32(newoffsetPtr + 4, 0, true)
+      return 0
+    },
+    fd_close(fd: number): number {
+      return 0
+    },
+    environ_sizes_get(countPtr: number, bufSizePtr: number): number {
+      const mem = new DataView(process.memory!.buffer)
+      mem.setUint32(countPtr, 0, true)
+      mem.setUint32(bufSizePtr, 0, true)
+      return 0
+    },
+    environ_get(environPtr: number, environBufPtr: number): number {
+      return 0
+    },
+  }
+}
+
 function wasmImports(process: ModuleProcess) {
   return {
     waos_socket_flush(socket: number) {
@@ -34,15 +105,21 @@ function wasmImports(process: ModuleProcess) {
     waos_socket_input_drain(socket: number) {
       try {
         const socketConnection = process.socketConnections[socket]
-        if(socketConnection?.connectedTo) {
-          const copiedBytes = socketConnection.connectedTo.socket.inputBuffer
-            .copyTo(socketConnection.socket.outputBuffer)
+        const fromConn = socketConnection?.connectedFrom
+        if(fromConn) {
+          const srcReadable = fromConn.socket.outputBuffer.readableBytes()
+          const dstWritable = socketConnection.socket.inputBuffer.writableBytes()
+          const copiedBytes = fromConn.socket.outputBuffer
+            .copyTo(socketConnection.socket.inputBuffer)
+          console.log(`  [drain] pid=${process.id} socket=${socket} srcReadable=${srcReadable} dstWritable=${dstWritable} copied=${copiedBytes}`)
           if(copiedBytes > 0) {
-            /// TODO: use scheduler when under load
-            socketConnection.connectedTo.process.handleDrain(socketConnection.connectedTo.socket.index)
+            process.handleData(socket)
           }
+        } else {
+          console.log(`  [drain] pid=${process.id} socket=${socket} NO connectedFrom (connectedTo=${!!socketConnection?.connectedTo})`)
         }
       } catch (error) {
+        console.error(`  [drain] pid=${process.id} socket=${socket} ERROR:`, error)
         process.handleError(error instanceof Error ? error : new Error(String(error)))
       }
     },
@@ -72,6 +149,9 @@ export class ModuleProcess implements Process {
   manaUsed: number = 0
   manaLimit: number = 1000000
 
+  stdout: string = ''
+  stderr: string = ''
+
   constructor(kernel: Kernel, id: process_id, maximumMemoryPages: number = 2048, manaLimit: number = 1000000) {
     this.kernel = kernel
     this.id = id
@@ -82,7 +162,7 @@ export class ModuleProcess implements Process {
 
   /** set the module code directly from binary data */
   async setModuleCode(code: Uint8Array): Promise<void> {
-    this.module = await WebAssembly.compile(code as BufferSource)
+    this.module = new WebAssembly.Module(code as BufferSource)
   }
 
   /**
@@ -142,7 +222,25 @@ export class ModuleProcess implements Process {
         waos: wasmImports(this) as unknown as Record<string, any>
       }
 
-      this.instance = await WebAssembly.instantiate(this.module, this.imports)
+      // Add WASI imports if the module requires them
+      const moduleImports = WebAssembly.Module.imports(this.module)
+      const needsWasi = moduleImports.some(i => i.module === 'wasi_snapshot_preview1')
+      if (needsWasi) {
+        this.imports['wasi_snapshot_preview1'] = wasiImports(this) as unknown as Record<string, any>
+      }
+      const needsEmscripten = moduleImports.some(i => i.name === 'emscripten_notify_memory_growth')
+      if (needsEmscripten) {
+        ;(this.imports['env'] as Record<string, any>)['emscripten_notify_memory_growth'] = () => {}
+      }
+
+      try {
+        this.instance = new WebAssembly.Instance(this.module, this.imports)
+      } catch (error) {
+        console.error('Error instantiating module', error)
+        console.error('module imports', WebAssembly.Module.imports(this.module))
+        console.error('imports', this.imports)        
+        throw error
+      }
       
       try {
         //@ts-ignore
@@ -252,6 +350,14 @@ export class ModuleProcess implements Process {
       if (!handleData) {
         throw new Error('waos_socket_data not exported from WASM module')
       }
+      const socketBuffer = this.moduleSockets.getSocket(socket_id)!.inputBuffer
+      const bytesInBuffer = new Uint8Array(socketBuffer?.readableBytes() ?? 0)
+      /* socketBuffer.peek(0, bytesInBuffer, socketBuffer.readableBytes())     
+      console.log(`[handleData] pid=${this.id} socket=${socket_id} bytesInBuffer=${bytesInBuffer.length}`)
+      for(let i = 0; i < bytesInBuffer.length; i+=16) {        
+        console.log(`${i.toString(16).padStart(4, '0')}:`, Array.from(bytesInBuffer.subarray(i, i + 16)).map(b => b.toString(16).padStart(2, '0')).join(' '))
+      }
+      console.log("BUFFER SIZE:", socketBuffer.getSize(), "READ OFFSET:", socketBuffer.getReadOffset(), "WRITE OFFSET:", socketBuffer.getWriteOffset()) */
       handleData(socket_id)
     } catch (error) {
       this.handleError(error instanceof Error ? error : new Error(String(error)))
