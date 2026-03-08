@@ -83,19 +83,13 @@ export class LocalProcess implements Process {
           const socketConnection = this.socketConnections[socket]
           const fromConn = socketConnection?.connectedFrom
           if (fromConn) {
-            const srcReadable = fromConn.socket.outputBuffer.readableBytes()
-            const dstWritable = socketConnection.socket.inputBuffer.writableBytes()
             const copiedBytes = fromConn.socket.outputBuffer
               .copyTo(socketConnection.socket.inputBuffer)
-            console.log(`  [bridge drain] socket=${socket} srcReadable=${srcReadable} dstWritable=${dstWritable} copied=${copiedBytes}`)
             if (copiedBytes > 0) {
               this.handleData(socket)
             }
-          } else {
-            console.log(`  [bridge drain] socket=${socket} NO connectedFrom`)
           }
         } catch (error) {
-          console.error(`  [bridge drain] socket=${socket} ERROR:`, error)
           this.handleError(error instanceof Error ? error : new Error(String(error)))
         }
       }
@@ -115,12 +109,6 @@ export class LocalProcess implements Process {
     if (!localSocket) {
       return
     }
-/*     const bytesInBuffer = new Uint8Array(localSocket.inputBuffer.readableBytes())
-    localSocket.inputBuffer.peek(0, bytesInBuffer, localSocket.inputBuffer.readableBytes())     
-    console.log(`[LocalProcess handleData] pid=${this.id} socket=${socket_id} bytesInBuffer=${bytesInBuffer.length}`)
-    for(let i = 0; i < bytesInBuffer.length; i+=16) {        
-      console.log(`  ${i.toString(16).padStart(4, '0')}:`, Array.from(bytesInBuffer.subarray(i, i + 16)).map(b => b.toString(16).padStart(2, '0')).join(' '))
-    } */
     localSocket.handleData()
   }
 

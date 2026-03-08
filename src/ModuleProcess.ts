@@ -107,16 +107,11 @@ function wasmImports(process: ModuleProcess) {
         const socketConnection = process.socketConnections[socket]
         const fromConn = socketConnection?.connectedFrom
         if(fromConn) {
-          const srcReadable = fromConn.socket.outputBuffer.readableBytes()
-          const dstWritable = socketConnection.socket.inputBuffer.writableBytes()
           const copiedBytes = fromConn.socket.outputBuffer
             .copyTo(socketConnection.socket.inputBuffer)
-          console.log(`  [drain] pid=${process.id} socket=${socket} srcReadable=${srcReadable} dstWritable=${dstWritable} copied=${copiedBytes}`)
           if(copiedBytes > 0) {
             process.handleData(socket)
           }
-        } else {
-          console.log(`  [drain] pid=${process.id} socket=${socket} NO connectedFrom (connectedTo=${!!socketConnection?.connectedTo})`)
         }
       } catch (error) {
         console.error(`  [drain] pid=${process.id} socket=${socket} ERROR:`, error)
@@ -350,15 +345,6 @@ export class ModuleProcess implements Process {
       if (!handleData) {
         throw new Error('waos_socket_data not exported from WASM module')
       }
-      const socketBuffer = this.moduleSockets.getSocket(socket_id)!.inputBuffer
-      const bytesInBuffer = new Uint8Array(socketBuffer?.readableBytes() ?? 0)
-      socketBuffer.peek(0, bytesInBuffer, socketBuffer.readableBytes())     
-      console.log(`[handleData] pid=${this.id} socket=${socket_id} bytesInBuffer=${bytesInBuffer.length}`)
-      for(let i = 0; i < bytesInBuffer.length; i+=16) {        
-        if(i>32 && i< bytesInBuffer.length-32) continue;
-        console.log(`${i.toString(16).padStart(4, '0')}:`, Array.from(bytesInBuffer.subarray(i, i + 16)).map(b => b.toString(16).padStart(2, '0')).join(' '))
-      }
-      console.log("BUFFER SIZE:", socketBuffer.getSize(), "READ OFFSET:", socketBuffer.getReadOffset(), "WRITE OFFSET:", socketBuffer.getWriteOffset())
       handleData(socket_id)
     } catch (error) {
       this.handleError(error instanceof Error ? error : new Error(String(error)))

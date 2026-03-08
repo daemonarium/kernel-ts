@@ -21,7 +21,6 @@ export class Kernel {
   }
 
   async spawn(code: Uint8Array, memory_limit: number = 2048, mana_limit: number = 1000000): Promise<process_id> {
-    console.log(`[kernel] spawn(code=${code.byteLength} bytes, mem=${memory_limit}, mana=${mana_limit})`)
     let processId: process_id | undefined
     
     // Search for empty slot
@@ -71,8 +70,6 @@ export class Kernel {
       this.processes[processId] = process
     }
 
-    console.log("[kernel] spawned")
-    
     return processId
   }
 
