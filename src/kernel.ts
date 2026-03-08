@@ -163,7 +163,6 @@ export class Kernel {
   async bind(process_from: process_id, socket_from: socket_id, 
              process_to: process_id, socket_to: socket_id, 
              direction: direction_15): Promise<void> {
-    debugger;
     const processFrom = this.processes[process_from]
     const processTo = this.processes[process_to]
     if(!processFrom) throw new Error(`Process ${process_from} not found`)

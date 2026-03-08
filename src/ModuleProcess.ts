@@ -211,7 +211,7 @@ export class ModuleProcess implements Process {
   async start(): Promise<void> {
     try {
       if(!this.memory) {
-        this.memory = new WebAssembly.Memory({ initial: Math.max(1024, this.maximumMemoryPages), maximum: this.maximumMemoryPages })
+        this.memory = new WebAssembly.Memory({ initial: this.maximumMemoryPages, maximum: this.maximumMemoryPages })
       }
       if(!this.module) throw new Error('Module not loaded')
 
@@ -352,12 +352,13 @@ export class ModuleProcess implements Process {
       }
       const socketBuffer = this.moduleSockets.getSocket(socket_id)!.inputBuffer
       const bytesInBuffer = new Uint8Array(socketBuffer?.readableBytes() ?? 0)
-      /* socketBuffer.peek(0, bytesInBuffer, socketBuffer.readableBytes())     
+      socketBuffer.peek(0, bytesInBuffer, socketBuffer.readableBytes())     
       console.log(`[handleData] pid=${this.id} socket=${socket_id} bytesInBuffer=${bytesInBuffer.length}`)
       for(let i = 0; i < bytesInBuffer.length; i+=16) {        
+        if(i>32 && i< bytesInBuffer.length-32) continue;
         console.log(`${i.toString(16).padStart(4, '0')}:`, Array.from(bytesInBuffer.subarray(i, i + 16)).map(b => b.toString(16).padStart(2, '0')).join(' '))
       }
-      console.log("BUFFER SIZE:", socketBuffer.getSize(), "READ OFFSET:", socketBuffer.getReadOffset(), "WRITE OFFSET:", socketBuffer.getWriteOffset()) */
+      console.log("BUFFER SIZE:", socketBuffer.getSize(), "READ OFFSET:", socketBuffer.getReadOffset(), "WRITE OFFSET:", socketBuffer.getWriteOffset())
       handleData(socket_id)
     } catch (error) {
       this.handleError(error instanceof Error ? error : new Error(String(error)))

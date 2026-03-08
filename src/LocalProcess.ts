@@ -32,6 +32,8 @@ export class LocalProcess implements Process {
   manaUsed: number = 0
   manaLimit: number = 1000000
 
+  memory: Uint8Array = new Uint8Array(0) // memory used for testing
+
   constructor(kernel: Kernel, id: process_id, manaLimit: number = 1000000) {
     this.kernel = kernel
     this.id = id
@@ -239,7 +241,7 @@ export class LocalProcess implements Process {
   }
 
   get_memory(): Uint8Array {
-    return new Uint8Array(0)
+    return this.memory
   }
 
   bind(processTo: Process, socket_id: socket_id, socket_to: socket_id, direction: Direction): void {
