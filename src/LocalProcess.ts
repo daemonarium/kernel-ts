@@ -17,7 +17,7 @@ import {
   SOCKET_FLAG_WRITABLE
 } from "@wa-os/ts-rpc"
 import { serializeValueByType, deserializeValueByType } from "@wa-os/ts-rpc/src/valueSerialization.js"
-import type { process_event_pointer_21, process_killed_event_22, process_error_event_24 } from './kernelApi.js'
+import type { process_event_pointer_33, process_killed_event_34, process_error_event_36 } from './kernelApi.js'
 
 export class LocalProcess implements Process {
   kernel: Kernel
@@ -200,15 +200,15 @@ export class LocalProcess implements Process {
             _type: 'process_error_event',
             process: this.id,
             error: error
-          } as TypedValue & process_error_event_24
+          } as TypedValue & process_error_event_36
         } else {
           event = {
             _type: 'process_killed_event',
             process: this.id
-          } as TypedValue & process_killed_event_22
+          } as TypedValue & process_killed_event_34
         }
 
-        const eventPointer: TypedValue & process_event_pointer_21 = {
+        const eventPointer: TypedValue & process_event_pointer_33 = {
           _type: 'process_event_pointer',
           event_pointer: event
         }
