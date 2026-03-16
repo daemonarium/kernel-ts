@@ -16,8 +16,8 @@ import {
   SOCKET_FLAG_READABLE,
   SOCKET_FLAG_WRITABLE
 } from "@wa-os/ts-rpc"
-import { serializeValueByType, deserializeValueByType } from "@wa-os/ts-rpc/src/valueSerialization.js"
-import type { process_event_pointer_33, process_killed_event_34, process_error_event_36 } from './kernelApi.js'
+import { serializeValueByType, deserializeValueByType, registerAllRuntimeCodecs } from "@wa-os/ts-rpc/src/valueSerialization.js"
+import type { process_killed_event_33, process_error_event_35 } from './kernelApi.js'
 
 export class LocalProcess implements Process {
   kernel: Kernel
@@ -132,11 +132,12 @@ export class LocalProcess implements Process {
     }
 
     const codecs = new CodecRegistry()
-    registerDynamicCodecs(codecs, typeRegistry)
+
+    /// @ts-ignore
+    registerAllRuntimeCodecs(codecs, typeRegistry)
 
     const writer = new CircularBufferWriter(socketInstance.inputBuffer, codecs)
-    // @ts-ignore - CircularBufferWriter implements the same interface as Writer
-    serializeValueByType(writer, typeRegistry, type, value)
+    serializeValueByType(writer as any, typeRegistry as any, type, value)
     writer.writeRest()
 
     this.handleData(socket)
@@ -200,23 +201,18 @@ export class LocalProcess implements Process {
             _type: 'process_error_event',
             process: this.id,
             error: error
-          } as TypedValue & process_error_event_36
+          } as TypedValue & process_error_event_35
         } else {
           event = {
             _type: 'process_killed_event',
             process: this.id
-          } as TypedValue & process_killed_event_34
-        }
-
-        const eventPointer: TypedValue & process_event_pointer_33 = {
-          _type: 'process_event_pointer',
-          event_pointer: event
+          } as TypedValue & process_killed_event_33
         }
 
         for (const monitor of monitorsToNotify) {
           try {
             if (monitor.process && monitor.process.getSocket(monitor.socket)) {
-              monitor.process.serializeToSocket(monitor.socket, eventPointer, typeRegistry)
+              monitor.process.serializeToSocket(monitor.socket, event, typeRegistry)
             }
           } catch (monitorError) {
             console.error(`Failed to notify monitor process ${monitor.process.id} on socket ${monitor.socket}:`, monitorError)

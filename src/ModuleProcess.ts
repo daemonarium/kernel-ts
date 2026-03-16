@@ -7,9 +7,9 @@ import type {
 } from './types.js'
 import { Direction } from './types.js'
 import { toHex } from './utils.js'
-import { TypeRegistry, deserializeTypeRegistry, ModuleSockets, Socket, CircularBufferWriter, TypedValue, CodecRegistry, registerDynamicCodecs } from "@wa-os/ts-rpc";
-import { serializeValueByType } from "@wa-os/ts-rpc/src/valueSerialization.js";
-import type { process_event_pointer_21, process_killed_event_22, process_error_event_24 } from './kernelApi.js'
+import { TypeRegistry, deserializeTypeRegistry, ModuleSockets, Socket, CircularBufferWriter, TypedValue, CodecRegistry } from "@wa-os/ts-rpc";
+import { serializeValueByType, registerAllRuntimeCodecs } from "@wa-os/ts-rpc/src/valueSerialization.js";
+import type { process_killed_event_33, process_error_event_35 } from './kernelApi.js'
 
 export { SocketConnection, SocketConnectionDestination, ProcessMonitor }
 
@@ -392,27 +392,20 @@ export class ModuleProcess implements Process {
       throw new Error(`Socket ${socket} not found in process ${this.id}`)
     }
 
-    // Get the type description for the value
     const type = typeRegistry.getTypeByName(value._type)
     if (!type) {
       throw new Error(`Type ${value._type} not found in type registry`)
     }
 
-    // Create CodecRegistry and register dynamic codecs for the registry
-    const codecs = new CodecRegistry()
-    registerDynamicCodecs(codecs, typeRegistry)
+    const codecs = new (CodecRegistry as any)()
+    registerAllRuntimeCodecs(codecs as any, typeRegistry as any)
 
-    // Create CircularBufferWriter wrapping the socket's input buffer
-    const writer = new CircularBufferWriter(socketInstance.inputBuffer, codecs)
+    const writer = new CircularBufferWriter(socketInstance.inputBuffer, codecs as any)
 
-    // Serialize the value (CircularBufferWriter has same interface as Writer)
-    // @ts-ignore - CircularBufferWriter implements the same interface as Writer
-    serializeValueByType(writer, typeRegistry, type, value)
+    serializeValueByType(writer as any, typeRegistry as any, type, value)
 
-    // Finalize serialization (handle any pending pointers)
     writer.writeRest()
 
-    // Trigger handleData on the process for the socket to process the event
     this.handleData(socket)
   }
 
@@ -442,33 +435,24 @@ export class ModuleProcess implements Process {
         // Get TypeRegistry from kernel
         const typeRegistry = this.kernel.createRpcRegistry()
 
-        // Create the appropriate event object
         let event: TypedValue
         if (error !== undefined) {
           event = {
             _type: 'process_error_event',
             process: this.id,
             error: error
-          } as TypedValue & process_error_event_24
+          } as TypedValue & process_error_event_35
         } else {
           event = {
             _type: 'process_killed_event',
             process: this.id
-          } as TypedValue & process_killed_event_22
+          } as TypedValue & process_killed_event_33
         }
 
-        // Wrap the event in process_event_pointer
-        const eventPointer: TypedValue & process_event_pointer_21 = {
-          _type: 'process_event_pointer',
-          event_pointer: event
-        }
-
-        // Notify each monitor
         for (const monitor of monitorsToNotify) {
           try {
-            // Check if monitor process still exists and is valid
             if (monitor.process && monitor.process.getSocket(monitor.socket)) {
-              monitor.process.serializeToSocket(monitor.socket, eventPointer, typeRegistry)
+              monitor.process.serializeToSocket(monitor.socket, event, typeRegistry)
             }
           } catch (monitorError) {
             // Log but don't fail - monitor process may have been killed

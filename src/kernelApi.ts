@@ -42,17 +42,13 @@ export enum direction_27 {
   BOTH = 3
 }
 
-export interface process_event_pointer_33 {
-  event_pointer: any | null
-}
+export interface process_killed_event_33 {}
 
-export interface process_killed_event_34 {}
-
-export interface process_event_35 {
+export interface process_event_34 {
   process: number
 }
 
-export interface process_error_event_36 {
+export interface process_error_event_35 {
   error: string
 }
 
@@ -262,31 +258,25 @@ export function createGeneratedTypeRegistry(): { registry: TypeRegistry, types: 
   })
   types['kernel_set_mana_limit_32'] = kernel_set_mana_limit_32
 
-  const process_event_pointer_33 = TypeDescription.create({
-    name: "process_event_pointer",
-    kind: TypeKind.Object,
-  })
-  types['process_event_pointer_33'] = process_event_pointer_33
-
-  const process_killed_event_34 = TypeDescription.create({
+  const process_killed_event_33 = TypeDescription.create({
     name: "process_killed_event",
     kind: TypeKind.Message,
     bases: [],
   })
-  types['process_killed_event_34'] = process_killed_event_34
+  types['process_killed_event_33'] = process_killed_event_33
 
-  const process_event_35 = TypeDescription.create({
+  const process_event_34 = TypeDescription.create({
     name: "process_event",
     kind: TypeKind.Object,
   })
-  types['process_event_35'] = process_event_35
+  types['process_event_34'] = process_event_34
 
-  const process_error_event_36 = TypeDescription.create({
+  const process_error_event_35 = TypeDescription.create({
     name: "process_error_event",
     kind: TypeKind.Message,
     bases: [],
   })
-  types['process_error_event_36'] = process_error_event_36
+  types['process_error_event_35'] = process_error_event_35
 
   // Register all types to preserve indices
   registry.registerType(void_0)
@@ -322,10 +312,9 @@ export function createGeneratedTypeRegistry(): { registry: TypeRegistry, types: 
   registry.registerType(kernel_demonitor_30)
   registry.registerType(kernel_measure_mana_31)
   registry.registerType(kernel_set_mana_limit_32)
-  registry.registerType(process_event_pointer_33)
-  registry.registerType(process_killed_event_34)
-  registry.registerType(process_event_35)
-  registry.registerType(process_error_event_36)
+  registry.registerType(process_killed_event_33)
+  registry.registerType(process_event_34)
+  registry.registerType(process_error_event_35)
 
   // Fill enumMembers, bases, item/key
   read_annotation_19.bases = [
@@ -359,12 +348,12 @@ export function createGeneratedTypeRegistry(): { registry: TypeRegistry, types: 
 
   kernel_set_mana_limit_32.item = void_0
 
-  process_killed_event_34.bases = [
-    process_event_35,
+  process_killed_event_33.bases = [
+    process_event_34,
   ]
 
-  process_error_event_36.bases = [
-    process_event_35,
+  process_error_event_35.bases = [
+    process_event_34,
   ]
 
   // Fill members (after all types exist)
@@ -635,15 +624,7 @@ export function createGeneratedTypeRegistry(): { registry: TypeRegistry, types: 
     },
   ]
 
-  process_event_pointer_33.members = [
-    {
-      name: "event_pointer",
-      type: pointer_14,
-      annotations: [],
-    },
-  ]
-
-  process_event_35.members = [
+  process_event_34.members = [
     {
       name: "process",
       type: uint32_6,
@@ -651,7 +632,7 @@ export function createGeneratedTypeRegistry(): { registry: TypeRegistry, types: 
     },
   ]
 
-  process_error_event_36.members = [
+  process_error_event_35.members = [
     {
       name: "error",
       type: string_12,
