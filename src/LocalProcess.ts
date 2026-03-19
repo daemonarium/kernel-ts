@@ -17,7 +17,7 @@ import {
   SOCKET_FLAG_WRITABLE
 } from "@wa-os/ts-rpc"
 import { serializeValueByType, deserializeValueByType, registerAllRuntimeCodecs } from "@wa-os/ts-rpc/src/valueSerialization.js"
-import type { process_killed_event_33, process_error_event_35 } from './kernelApi.js'
+import type { process_killed_event_34, process_error_event_36 } from './kernelApi.js'
 
 export class LocalProcess implements Process {
   kernel: Kernel
@@ -201,12 +201,12 @@ export class LocalProcess implements Process {
             _type: 'process_error_event',
             process: this.id,
             error: error
-          } as TypedValue & process_error_event_35
+          } as TypedValue & process_error_event_36
         } else {
           event = {
             _type: 'process_killed_event',
             process: this.id
-          } as TypedValue & process_killed_event_33
+          } as TypedValue & process_killed_event_34
         }
 
         for (const monitor of monitorsToNotify) {

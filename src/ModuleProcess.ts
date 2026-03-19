@@ -9,7 +9,7 @@ import { Direction } from './types.js'
 import { toHex } from './utils.js'
 import { TypeRegistry, deserializeTypeRegistry, ModuleSockets, Socket, CircularBufferWriter, TypedValue, CodecRegistry } from "@wa-os/ts-rpc";
 import { serializeValueByType, registerAllRuntimeCodecs } from "@wa-os/ts-rpc/src/valueSerialization.js";
-import type { process_killed_event_33, process_error_event_35 } from './kernelApi.js'
+import type { process_killed_event_34, process_error_event_36 } from './kernelApi.js'
 
 export { SocketConnection, SocketConnectionDestination, ProcessMonitor }
 
@@ -441,12 +441,12 @@ export class ModuleProcess implements Process {
             _type: 'process_error_event',
             process: this.id,
             error: error
-          } as TypedValue & process_error_event_35
+          } as TypedValue & process_error_event_36
         } else {
           event = {
             _type: 'process_killed_event',
             process: this.id
-          } as TypedValue & process_killed_event_33
+          } as TypedValue & process_killed_event_34
         }
 
         for (const monitor of monitorsToNotify) {

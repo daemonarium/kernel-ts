@@ -2,7 +2,7 @@ import type Process from './Process.js'
 import { ModuleProcess } from './ModuleProcess.js'
 import { LocalProcess } from './LocalProcess.js'
 
-import { createGeneratedTypeRegistry, direction_27 } from './kernelApi.js'
+import { createGeneratedTypeRegistry, direction_28 } from './kernelApi.js'
 
 import type { 
   process_id, socket_id
@@ -159,7 +159,7 @@ export class Kernel {
 
   async bind(process_from: process_id, socket_from: socket_id, 
              process_to: process_id, socket_to: socket_id, 
-             direction: direction_27): Promise<void> {
+             direction: direction_28): Promise<void> {
     const processFrom = this.processes[process_from]
     const processTo = this.processes[process_to]
     if(!processFrom) throw new Error(`Process ${process_from} not found`)
@@ -174,7 +174,7 @@ export class Kernel {
 
   async unbind(process_from: process_id, socket_from: socket_id,
                process_to: process_id, socket_to: socket_id,
-               direction: direction_27): Promise<void> {
+               direction: direction_28): Promise<void> {
     const processFrom = this.processes[process_from]
     const processTo = this.processes[process_to]
     if(!processFrom) throw new Error(`Process ${process_from} not found`)
@@ -222,47 +222,47 @@ export class Kernel {
     const result = createGeneratedTypeRegistry()
     const { registry, types } = result
     
-    types['kernel_spawn_22'].implementation = (
+    types['kernel_spawn_23'].implementation = (
       code: Uint8Array, memory_limit: number, mana_limit: number
     ): Promise<number> => this.spawn(code, memory_limit, mana_limit)
     
-    types['kernel_resurect_23'].implementation = (
+    types['kernel_resurect_24'].implementation = (
       code: Uint8Array, memory: Uint8Array, memory_limit: number, mana_limit: number
     ): Promise<number> => this.resurect(code, memory, memory_limit, mana_limit)
     
-    types['kernel_save_24'].implementation = (
+    types['kernel_save_25'].implementation = (
       id: number
     ): Promise<Uint8Array> => this.save(id)
     
-    types['kernel_kill_25'].implementation = (
+    types['kernel_kill_26'].implementation = (
       id: number
     ): Promise<void> => this.kill(id)
     
-    types['kernel_bind_26'].implementation = (
+    types['kernel_bind_27'].implementation = (
       process_from: number, socket_from: number,
       process_to: number, socket_to: number,
-      direction: direction_27
+      direction: direction_28
     ): Promise<void> => this.bind(process_from, socket_from, process_to, socket_to, direction)
     
-    types['kernel_unbind_28'].implementation = (
+    types['kernel_unbind_29'].implementation = (
       process_from: number, socket_from: number,
       process_to: number, socket_to: number,
-      direction: direction_27
+      direction: direction_28
     ): Promise<void> => this.unbind(process_from, socket_from, process_to, socket_to, direction)
     
-    types['kernel_monitor_29'].implementation = (
+    types['kernel_monitor_30'].implementation = (
       target: number, monitor: number, monitor_socket: number
     ): Promise<void> => this.monitor(target, monitor, monitor_socket)
     
-    types['kernel_demonitor_30'].implementation = (
+    types['kernel_demonitor_31'].implementation = (
       target: number, monitor: number, monitor_socket: number
     ): Promise<void> => this.demonitor(target, monitor, monitor_socket)
     
-    types['kernel_measure_mana_31'].implementation = (
+    types['kernel_measure_mana_32'].implementation = (
       process: number, new_mana: number
     ): Promise<number> => this.measure_mana(process, new_mana)
     
-    types['kernel_set_mana_limit_32'].implementation = (
+    types['kernel_set_mana_limit_33'].implementation = (
       mana_limit: number
     ): Promise<void> => this.set_mana_limit(mana_limit)
     
