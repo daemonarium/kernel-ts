@@ -142,7 +142,6 @@ export class Kernel {
 
   async save(id: process_id): Promise<Uint8Array> {
     const process = this.processes[id]
-    debugger
     if(!process) {
       throw new Error(`Process ${id} not found`)
     }
