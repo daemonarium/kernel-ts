@@ -7,7 +7,16 @@ import type {
 } from './types.js'
 import { Direction } from './types.js'
 import { toHex } from './utils.js'
-import { TypeRegistry, deserializeTypeRegistry, ModuleSockets, Socket, CircularBufferWriter, TypedValue, CodecRegistry } from "@wa-os/ts-rpc";
+import {
+  TypeRegistry,
+  deserializeTypeRegistry,
+  ModuleSockets,
+  Socket,
+  TypedValue,
+  CodecRegistry,
+  LocalCircularBuffer,
+  LocalCircularBufferWriter
+} from "@wa-os/ts-rpc";
 import { serializeValueByType, registerAllRuntimeCodecs } from "@wa-os/ts-rpc/src/valueSerialization.js";
 import type { process_killed_event_34, process_error_event_36 } from './kernelApi.js'
 
@@ -400,11 +409,12 @@ export class ModuleProcess implements Process {
     const codecs = new (CodecRegistry as any)()
     registerAllRuntimeCodecs(codecs as any, typeRegistry as any)
 
-    const writer = new CircularBufferWriter(socketInstance.inputBuffer, codecs as any)
-
+    const tempBuffer = new LocalCircularBuffer(Math.max(1024, socketInstance.inputBuffer.writableBytes() + 1))
+    const writer = new LocalCircularBufferWriter(tempBuffer, codecs as any)
     serializeValueByType(writer as any, typeRegistry as any, type, value)
-
     writer.writeRest()
+    tempBuffer.commitWrite(writer.offset)
+    tempBuffer.copyTo(socketInstance.inputBuffer)
 
     this.handleData(socket)
   }

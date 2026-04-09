@@ -5,8 +5,8 @@ import { Direction } from './types.js'
 import { 
   TypeRegistry, 
   Socket, 
-  CircularBufferWriter, 
-  CircularBufferReader,
+  LocalCircularBufferWriter, 
+  LocalCircularBufferReader,
   TypedValue, 
   CodecRegistry, 
   registerDynamicCodecs,
@@ -136,7 +136,7 @@ export class LocalProcess implements Process {
     /// @ts-ignore
     registerAllRuntimeCodecs(codecs, typeRegistry)
 
-    const writer = new CircularBufferWriter(socketInstance.inputBuffer, codecs)
+    const writer = new LocalCircularBufferWriter(socketInstance.inputBuffer, codecs)
     serializeValueByType(writer as any, typeRegistry as any, type, value)
     writer.writeRest()
 
@@ -164,7 +164,7 @@ export class LocalProcess implements Process {
     try {
       const codecs = new CodecRegistry()
       registerDynamicCodecs(codecs, typeRegistry)
-      const reader = new CircularBufferReader(socket.inputBuffer, codecs)
+      const reader = new LocalCircularBufferReader(socket.inputBuffer, codecs)
 
       let result: TypedValue | null = null
       reader.readTyped<TypedValue>((value) => {
