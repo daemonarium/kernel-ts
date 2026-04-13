@@ -615,6 +615,11 @@ export function createGeneratedTypeRegistry(): { registry: TypeRegistry, types: 
 
   kernel_set_mana_limit_33.members = [
     {
+      name: "process",
+      type: uint32_6,
+      annotations: [],
+    },
+    {
       name: "mana_limit",
       type: uint32_6,
       annotations: [],
@@ -723,6 +728,7 @@ async function kernel_measure_mana_32_impl(
 }
 
 async function kernel_set_mana_limit_33_impl(
+  process: number,
   mana_limit: number
 ): Promise<void> {
   /// TODO: implement

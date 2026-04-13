@@ -213,8 +213,12 @@ export class Kernel {
     return processInstance.manaUsed
   }
 
-  async set_mana_limit(mana_limit: number): Promise<void> {
-    this.manaLimit = mana_limit
+  async set_mana_limit(process: process_id, mana_limit: number): Promise<void> {
+    const processInstance = this.processes[process]
+    if(!processInstance) {
+      throw new Error(`Process ${process} not found`)
+    }    
+    processInstance.manaLimit = mana_limit
   }
 
 
@@ -263,8 +267,8 @@ export class Kernel {
     ): Promise<number> => this.measure_mana(process, new_mana)
     
     types['kernel_set_mana_limit_33'].implementation = (
-      mana_limit: number
-    ): Promise<void> => this.set_mana_limit(mana_limit)
+      process: number, mana_limit: number
+    ): Promise<void> => this.set_mana_limit(process, mana_limit)
     
     registry.assignMethodIds()
     return registry
