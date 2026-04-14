@@ -154,7 +154,17 @@ export class Kernel {
       throw new Error(`Process ${id} not found`)
     }
     await process.kill(error)
-    this.processes[id] = null
+    this.releaseProcessIfDeadAndUnmonitored(id)
+  }
+
+  releaseProcessIfDeadAndUnmonitored(id: process_id): void {
+    const process = this.processes[id]
+    if (!process) {
+      return
+    }
+    if (!process.isAlive && process.monitors.length === 0) {
+      this.processes[id] = null
+    }
   }
 
   async bind(process_from: process_id, socket_from: socket_id, 
@@ -201,6 +211,7 @@ export class Kernel {
     if(!targetProcess) throw new Error(`Target process ${target} not found`)
     if(!monitorProcess) throw new Error(`Monitor process ${monitor} not found`)
     monitorProcess.demonitor(targetProcess, monitor_socket)
+    this.releaseProcessIfDeadAndUnmonitored(target)
   }
 
   async measure_mana(process: process_id, new_mana: number): Promise<number> {

@@ -33,6 +33,7 @@ export class ProcessMonitor {
 export default interface Process {
   kernel: Kernel
   id: process_id
+  isAlive: boolean
 
   manaUsed: number
   manaLimit: number
@@ -40,6 +41,7 @@ export default interface Process {
 
   socketConnections: Array<SocketConnection>
   monitors: Array<ProcessMonitor>
+  monitoredProcesses: Array<ProcessMonitor>
 
   getSocket(index: socket_id): Socket | null
 
@@ -57,6 +59,8 @@ export default interface Process {
   bind(processTo: Process, socket_id: socket_id, socket_to: socket_id, direction: Direction): void
   unbind(processTo: Process, socket_id: socket_id, socket_to: socket_id, direction: Direction): void
 
+  addMonitor(monitorProcess: Process, socket_id: socket_id): void
+  removeMonitor(monitorProcess: Process, socket_id: socket_id): void
   monitor(process: Process, socket_id: socket_id): void
   demonitor(process: Process, socket_id: socket_id): void
 }

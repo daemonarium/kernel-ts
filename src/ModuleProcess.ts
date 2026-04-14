@@ -137,6 +137,7 @@ export class ModuleProcess implements Process {
 
   kernel: Kernel
   id: process_id
+  isAlive: boolean = true
   maximumMemoryPages: number
 
   module?: WebAssembly.Module
@@ -147,6 +148,7 @@ export class ModuleProcess implements Process {
   moduleSockets?: ModuleSockets
   socketConnections: Array<SocketConnection> = []
   monitors: Array<ProcessMonitor> = []
+  monitoredProcesses: Array<ProcessMonitor> = []
 
   rpcDescription?: TypeRegistry
   
@@ -425,20 +427,54 @@ export class ModuleProcess implements Process {
    * associated with this process. After destruction, the process should not be usable.
    */
   async kill(error: string | undefined): Promise<void> {
+    if (!this.isAlive) {
+      return
+    }
+    this.isAlive = false
+
     // Clean up all socket connections
     for (let i = 0; i < this.socketConnections.length; i++) {
       const connection = this.socketConnections[i]
-      if (connection) {
-        // Clear connections
-        connection.connectedTo = undefined
-        connection.connectedFrom = undefined
+      if (!connection) continue
+
+      const connectedTo = connection.connectedTo
+      if (connectedTo) {
+        const targetConnection = connectedTo.process.socketConnections[connectedTo.socketIndex]
+        if (targetConnection?.connectedFrom?.processId === this.id &&
+            targetConnection.connectedFrom.socketIndex === i) {
+          targetConnection.connectedFrom.process.socketConnections[targetConnection.connectedFrom.socketIndex] = undefined
+          targetConnection.connectedFrom = undefined          
+        }
       }
+
+      const connectedFrom = connection.connectedFrom
+      if (connectedFrom) {
+        const sourceConnection = connectedFrom.process.socketConnections[connectedFrom.socketIndex]
+        if (sourceConnection?.connectedTo?.processId === this.id &&
+            sourceConnection.connectedTo.socketIndex === i) {
+          sourceConnection.connectedTo.process.socketConnections[sourceConnection.connectedTo.socketIndex] = undefined
+          sourceConnection.connectedTo = undefined          
+        }
+      }
+
+      connection.connectedTo = undefined
+      connection.connectedFrom = undefined
     }
     this.socketConnections = []
 
+    const monitoredProcessesToRemove = [...this.monitoredProcesses]
+    this.monitoredProcesses = []
+    for (const monitoredProcess of monitoredProcessesToRemove) {
+      try {
+        monitoredProcess.process.removeMonitor(this, monitoredProcess.socket)
+        this.kernel.releaseProcessIfDeadAndUnmonitored(monitoredProcess.process.id)
+      } catch (removeMonitorError) {
+        console.error(`Failed to remove monitor relation ${this.id} -> ${monitoredProcess.process.id}:`, removeMonitorError)
+      }
+    }
+
     // Notify all monitors
     const monitorsToNotify = [...this.monitors]
-    this.monitors = []
 
     if (monitorsToNotify.length > 0) {
       try {
@@ -502,6 +538,13 @@ export class ModuleProcess implements Process {
    * Messages sent on the specified sockets will be routed according to the direction parameter.
    */
   bind(processTo: Process, socket_id: socket_id, socket_to: socket_id, direction: Direction): void {
+    if (!this.isAlive) {
+      throw new Error(`Process ${this.id} is not alive`)
+    }
+    if (!processTo.isAlive) {
+      throw new Error(`Process ${processTo.id} is not alive`)
+    }
+
     if (!this.moduleSockets) {
       throw new Error('Process not started - moduleSockets not initialized')
     }
@@ -637,6 +680,13 @@ export class ModuleProcess implements Process {
    * When process is destroyed this process will receive a notification.
    */
   monitor(process: Process, socket_id: socket_id): void {
+    if (!this.isAlive) {
+      throw new Error(`Process ${this.id} is not alive`)
+    }
+    if (!process.isAlive) {
+      throw new Error(`Process ${process.id} is not alive`)
+    }
+
     if (!this.moduleSockets) {
       throw new Error('This process not started - moduleSockets not initialized')
     }
@@ -647,16 +697,16 @@ export class ModuleProcess implements Process {
       throw new Error(`Socket ${socket_id} not found in process ${this.id}`)
     }
 
-    // Check for duplicate monitoring entry
-    const existingMonitor = process.monitors.find(
-      m => m.process.id === this.id && m.socket === socket_id
+    // Check for duplicate outgoing monitoring entry
+    const existingMonitor = this.monitoredProcesses.find(
+      m => m.process.id === process.id && m.socket === socket_id
     )
     if (existingMonitor) {
       throw new Error(`Process ${this.id} is already monitoring process ${process.id} on socket ${socket_id}`)
     }
 
-    // Add monitor entry to the target process
-    process.monitors.push(new ProcessMonitor(this, socket_id))
+    process.addMonitor(this, socket_id)
+    this.monitoredProcesses.push(new ProcessMonitor(process, socket_id))
   }
 
   /**
@@ -668,16 +718,43 @@ export class ModuleProcess implements Process {
    * This process will no longer receive notifications when the process is destroyed.
    */
   demonitor(process: Process, socket_id: socket_id): void {
-    const monitorIndex = process.monitors.findIndex(
-      m => m.process.id === this.id && m.socket === socket_id
+    const monitoredProcessIndex = this.monitoredProcesses.findIndex(
+      m => m.process.id === process.id && m.socket === socket_id
     )
     
-    if (monitorIndex === -1) {
+    if (monitoredProcessIndex === -1) {
       throw new Error(`Process ${this.id} is not monitoring process ${process.id} on socket ${socket_id}`)
     }
 
-    // Remove monitor entry from the target process
-    process.monitors.splice(monitorIndex, 1)
+    process.removeMonitor(this, socket_id)
+    this.monitoredProcesses.splice(monitoredProcessIndex, 1)
+  }
+
+  addMonitor(monitorProcess: Process, socket_id: socket_id): void {
+    if (!this.isAlive) {
+      throw new Error(`Process ${this.id} is not alive`)
+    }
+
+    const existingMonitor = this.monitors.find(
+      m => m.process.id === monitorProcess.id && m.socket === socket_id
+    )
+    if (existingMonitor) {
+      throw new Error(`Process ${monitorProcess.id} is already monitoring process ${this.id} on socket ${socket_id}`)
+    }
+
+    this.monitors.push(new ProcessMonitor(monitorProcess, socket_id))
+  }
+
+  removeMonitor(monitorProcess: Process, socket_id: socket_id): void {
+    const monitorIndex = this.monitors.findIndex(
+      m => m.process.id === monitorProcess.id && m.socket === socket_id
+    )
+    
+    if (monitorIndex === -1) {
+      throw new Error(`Process ${monitorProcess.id} is not monitoring process ${this.id} on socket ${socket_id}`)
+    }
+
+    this.monitors.splice(monitorIndex, 1)
   }
 
 }
