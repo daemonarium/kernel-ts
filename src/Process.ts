@@ -2,6 +2,8 @@ import type { Kernel } from './kernel.js'
 import type { process_id, socket_id } from './types.js'
 import type { Direction } from './types.js'
 import type { Socket, TypeRegistry, TypedValue } from '@wa-os/ts-rpc'
+import type { ProcessRuntimeState } from './ProcessRuntimeState.js'
+import type { MonitorConfig } from './monitorFlags.js'
 
 export interface SocketConnectionDestination {
   processId: process_id
@@ -23,10 +25,12 @@ export class SocketConnection {
 export class ProcessMonitor {
   process: Process
   socket: socket_id
+  config: MonitorConfig
 
-  constructor(process: Process, socket: socket_id) {
+  constructor(process: Process, socket: socket_id, config: MonitorConfig) {
     this.process = process
     this.socket = socket
+    this.config = config
   }
 }
 
@@ -34,6 +38,7 @@ export default interface Process {
   kernel: Kernel
   id: process_id
   isAlive: boolean
+  runtime: ProcessRuntimeState
 
   manaUsed: number
   manaLimit: number
@@ -59,9 +64,12 @@ export default interface Process {
   bind(processTo: Process, socket_id: socket_id, socket_to: socket_id, direction: Direction): void
   unbind(processTo: Process, socket_id: socket_id, socket_to: socket_id, direction: Direction): void
 
-  addMonitor(monitorProcess: Process, socket_id: socket_id): void
+  addMonitor(monitorProcess: Process, socket_id: socket_id, config: MonitorConfig): void
   removeMonitor(monitorProcess: Process, socket_id: socket_id): void
-  monitor(process: Process, socket_id: socket_id): void
+  monitor(process: Process, socket_id: socket_id, config: MonitorConfig): void
   demonitor(process: Process, socket_id: socket_id): void
-}
 
+  pausePump(): void
+  resumePump(): void
+  isPumpPaused(): boolean
+}

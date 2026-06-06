@@ -1,11 +1,10 @@
 import type { Kernel } from './kernel.js'
-import Process, { SocketConnection, SocketConnectionDestination, ProcessMonitor } from './Process.js'
+import Process, { SocketConnection, ProcessMonitor } from './Process.js'
 import type { process_id, socket_id } from './types.js'
 import { Direction } from './types.js'
 import { 
   TypeRegistry, 
   Socket, 
-  LocalCircularBufferWriter, 
   LocalCircularBufferReader,
   TypedValue, 
   CodecRegistry, 
@@ -13,16 +12,18 @@ import {
   LocalSockets,
   LocalSocket,
   SocketOptions,
-  SOCKET_FLAG_READABLE,
-  SOCKET_FLAG_WRITABLE
 } from "@wa-os/ts-rpc"
-import { serializeValueByType, deserializeValueByType, registerAllRuntimeCodecs } from "@wa-os/ts-rpc/src/valueSerialization.js"
 import type { process_killed_event, process_error_event } from './kernelApi.js'
+import { ProcessRuntimeState } from './ProcessRuntimeState.js'
+import type { MonitorConfig } from './monitorFlags.js'
+import { DEFAULT_MONITOR_FLAGS } from './monitorFlags.js'
+import { pumpFlush, pumpInputDrain } from './pump.js'
 
 export class LocalProcess implements Process {
   kernel: Kernel
   id: process_id
   isAlive: boolean = true
+  runtime = new ProcessRuntimeState()
 
   localSockets: LocalSockets
   socketConnections: Array<SocketConnection> = []
@@ -34,13 +35,25 @@ export class LocalProcess implements Process {
   manaUsed: number = 0
   manaLimit: number = 1000000
 
-  memory: Uint8Array = new Uint8Array(0) // memory used for testing
+  memory: Uint8Array = new Uint8Array(0)
 
   constructor(kernel: Kernel, id: process_id, manaLimit: number = 1000000) {
     this.kernel = kernel
     this.id = id
     this.manaLimit = manaLimit
     this.localSockets = new LocalSockets()
+  }
+
+  pausePump(): void {
+    this.runtime.pausePump()
+  }
+
+  resumePump(): void {
+    this.runtime.resumePump()
+  }
+
+  isPumpPaused(): boolean {
+    return this.runtime.isPumpPaused()
   }
 
   useMana(mana: number): void {
@@ -63,34 +76,20 @@ export class LocalProcess implements Process {
   }
 
   createSocket(index: number, options: SocketOptions): LocalSocket {
+    const emitter = this.kernel.monitorEmitter
+    const backpressure = this.kernel.monitorBackpressure
     const socketOptions = {
       ...options,
       flushCallback: (socket: number) => {
         try {
-          const socketConnection = this.socketConnections[socket]
-          if (socketConnection?.connectedTo) {
-            const copiedBytes = socketConnection.socket.outputBuffer
-              .copyTo(socketConnection.connectedTo.socket.inputBuffer)
-            if (copiedBytes > 0) {
-              /// TODO: use scheduler when under load
-              socketConnection.connectedTo.process.handleData(socketConnection.connectedTo.socket.index)
-            }
-          }
+          pumpFlush(this, socket, emitter, backpressure)
         } catch (error) {
           this.handleError(error instanceof Error ? error : new Error(String(error)))
         }
       },
       drainCallback: (socket: number) => {
         try {
-          const socketConnection = this.socketConnections[socket]
-          const fromConn = socketConnection?.connectedFrom
-          if (fromConn) {
-            const copiedBytes = fromConn.socket.outputBuffer
-              .copyTo(socketConnection.socket.inputBuffer)
-            if (copiedBytes > 0) {
-              this.handleData(socket)
-            }
-          }
+          pumpInputDrain(this, socket, emitter, backpressure)
         } catch (error) {
           this.handleError(error instanceof Error ? error : new Error(String(error)))
         }
@@ -112,6 +111,7 @@ export class LocalProcess implements Process {
       return
     }
     localSocket.handleData()
+    this.kernel.monitorBackpressure.notifyInputConsumed(this.id, socket_id)
   }
 
   handleDrain(socket_id: number): void {
@@ -122,27 +122,12 @@ export class LocalProcess implements Process {
     localSocket.handleDrain()
   }
 
-  serializeToSocket(socket: socket_id, value: TypedValue, typeRegistry: TypeRegistry): void {
-    const socketInstance = this.localSockets.getSocket(socket)
-    if (!socketInstance) {
-      throw new Error(`Socket ${socket} not found in process ${this.id}`)
-    }
-
-    const type = typeRegistry.getTypeByName(value._type)
-    if (!type) {
-      throw new Error(`Type ${value._type} not found in type registry`)
-    }
-
-    const codecs = new CodecRegistry()
-
-    /// @ts-ignore
-    registerAllRuntimeCodecs(codecs, typeRegistry)
-
-    const writer = new LocalCircularBufferWriter(socketInstance.inputBuffer, codecs)
-    serializeValueByType(writer as any, typeRegistry as any, type, value)
-    writer.writeRest()
-
-    this.handleData(socket)
+  serializeToSocket(socket: socket_id, value: TypedValue, _typeRegistry: TypeRegistry): void {
+    this.kernel.monitorEmitter.deliverEvent(
+      { process: this, socket, config: { flags: 0 } },
+      value._type as string,
+      value as object
+    )
   }
 
   sendMessage(socket: socket_id, value: TypedValue): void {
@@ -230,30 +215,17 @@ export class LocalProcess implements Process {
 
     if (monitorsToNotify.length > 0) {
       try {
-        const typeRegistry = this.kernel.createRpcRegistry()
-
-        let event: TypedValue
         if (error !== undefined) {
-          event = {
+          this.kernel.monitorEmitter.emitLifecycleEvent(this, 'process_error_event', {
             _type: 'process_error_event',
             process: this.id,
-            error: error
-          } as TypedValue & process_error_event
+            error,
+          } as TypedValue & process_error_event)
         } else {
-          event = {
+          this.kernel.monitorEmitter.emitLifecycleEvent(this, 'process_killed_event', {
             _type: 'process_killed_event',
-            process: this.id
-          } as TypedValue & process_killed_event
-        }
-
-        for (const monitor of monitorsToNotify) {
-          try {
-            if (monitor.process && monitor.process.getSocket(monitor.socket)) {
-              monitor.process.serializeToSocket(monitor.socket, event, typeRegistry)
-            }
-          } catch (monitorError) {
-            console.error(`Failed to notify monitor process ${monitor.process.id} on socket ${monitor.socket}:`, monitorError)
-          }
+            process: this.id,
+          } as TypedValue & process_killed_event)
         }
       } catch (notificationError) {
         console.error(`Failed to notify monitors for process ${this.id}:`, notificationError)
@@ -371,7 +343,7 @@ export class LocalProcess implements Process {
     }
   }
 
-  addMonitor(monitorProcess: Process, socket_id: socket_id): void {
+  addMonitor(monitorProcess: Process, socket_id: socket_id, config: MonitorConfig): void {
     if (!this.isAlive) {
       throw new Error(`Process ${this.id} is not alive`)
     }
@@ -383,7 +355,9 @@ export class LocalProcess implements Process {
       throw new Error(`Process ${monitorProcess.id} is already monitoring process ${this.id} on socket ${socket_id}`)
     }
 
-    this.monitors.push(new ProcessMonitor(monitorProcess, socket_id))
+    const monitorEntry = new ProcessMonitor(monitorProcess, socket_id, config)
+    this.monitors.push(monitorEntry)
+    this.kernel.onMonitorRelationAdded(this, monitorEntry)
   }
 
   removeMonitor(monitorProcess: Process, socket_id: socket_id): void {
@@ -398,7 +372,7 @@ export class LocalProcess implements Process {
     this.monitors.splice(monitorIndex, 1)
   }
 
-  monitor(process: Process, socket_id: socket_id): void {
+  monitor(process: Process, socket_id: socket_id, config: MonitorConfig = { flags: DEFAULT_MONITOR_FLAGS }): void {
     if (!this.isAlive) {
       throw new Error(`Process ${this.id} is not alive`)
     }
@@ -418,8 +392,8 @@ export class LocalProcess implements Process {
       throw new Error(`Process ${this.id} is already monitoring process ${process.id} on socket ${socket_id}`)
     }
 
-    process.addMonitor(this, socket_id)
-    this.monitoredProcesses.push(new ProcessMonitor(process, socket_id))
+    process.addMonitor(this, socket_id, config)
+    this.monitoredProcesses.push(new ProcessMonitor(process, socket_id, config))
   }
 
   demonitor(process: Process, socket_id: socket_id): void {

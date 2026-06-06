@@ -2,19 +2,27 @@ import type Process from './Process.js'
 import { ModuleProcess } from './ModuleProcess.js'
 import { LocalProcess } from './LocalProcess.js'
 
-import { createGeneratedTypeRegistry, direction } from './kernelApi.js'
+import { createGeneratedTypeRegistry, direction, monitor_flag, type save_result } from './kernelApi.js'
 
 import type { 
   process_id, socket_id
 } from './types.js'
 import { Direction } from './types.js'
 import { TypeRegistry } from '@wa-os/ts-rpc'
+import { MonitorSocketBackpressure } from './MonitorSocketBackpressure.js'
+import { ProcessMonitorEmitter } from './ProcessMonitorEmitter.js'
+import type { MonitorConfig } from './monitorFlags.js'
+import { DEFAULT_MONITOR_FLAGS } from './monitorFlags.js'
+import { emitInitialBufferStates } from './monitorInit.js'
 
 export class Kernel {
 
   processes: Array<Process | null>
   processSearchPosition: number = 0
   manaLimit: number = 1000000
+
+  readonly monitorBackpressure = new MonitorSocketBackpressure()
+  readonly monitorEmitter = new ProcessMonitorEmitter(this, this.monitorBackpressure)
 
   constructor() {
     this.processes = []
@@ -49,12 +57,6 @@ export class Kernel {
       const hashBuffer = await crypto.subtle.digest('SHA-256', code);             
       const hashHex = Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
       console.error(`Error setting module code for code with length ${code.byteLength} bytes and hash ${hashHex}`, error)
-      // print code as hex in chunks of 16 bytes    
-/*       console.log("code:", code)
-      for (let i = 0; i < code.byteLength; i += 16) {
-        // @ts-ignore
-        console.error(i.toString(16).padStart(4,'0'), Array.from(code.slice(i, i + 16)).map(b => b.toString(16).padStart(2, '0')).join(' '))
-      } */
       throw error
     }
     try {
@@ -76,7 +78,6 @@ export class Kernel {
   async spawnLocal(mana_limit: number = 1000000): Promise<process_id> {
     let processId: process_id | undefined
     
-    // Search for empty slot
     if (this.processes.length > 0) {
       const searchStart = this.processSearchPosition
       do {
@@ -88,7 +89,6 @@ export class Kernel {
       } while (this.processSearchPosition !== searchStart)
     }
     
-    // If no empty slot found, append to end
     if (processId === undefined) {
       processId = this.processes.length
       this.processSearchPosition = processId
@@ -108,7 +108,6 @@ export class Kernel {
   async resurect(code: Uint8Array, memory: Uint8Array, memory_limit: number = 2048, mana_limit: number = 1000000): Promise<process_id> {
     let processId: process_id | undefined
     
-    // Search for empty slot
     if (this.processes.length > 0) {
       const searchStart = this.processSearchPosition
       do {
@@ -120,7 +119,6 @@ export class Kernel {
       } while (this.processSearchPosition !== searchStart)
     }
     
-    // If no empty slot found, append to end
     if (processId === undefined) {
       processId = this.processes.length
       this.processSearchPosition = processId
@@ -140,12 +138,37 @@ export class Kernel {
     return processId
   }
 
-  async save(id: process_id): Promise<Uint8Array> {
+  async save(id: process_id): Promise<save_result> {
     const process = this.processes[id]
-    if(!process) {
+    if (!process) {
       throw new Error(`Process ${id} not found`)
     }
-    return process.get_memory()
+    if (!process.isAlive) {
+      throw new Error(`Process ${id} is not alive`)
+    }
+
+    process.pausePump()
+    try {
+      const snapshot_uid = process.runtime.nextSnapshotUid++
+      const memory = process.get_memory()
+      const mana_used = process.manaUsed
+      const mana_limit = process.manaLimit
+
+      await this.monitorEmitter.awaitEmitToMonitors(
+        process,
+        monitor_flag.SAVE,
+        'process_save_event',
+        () => ({
+          _type: 'process_save_event',
+          process: id,
+          snapshot_uid,
+        })
+      )
+
+      return { snapshot_uid, memory, mana_used, mana_limit }
+    } finally {
+      process.resumePump()
+    }
   }
 
   async kill(id: process_id, error?: string): Promise<void> {
@@ -175,7 +198,6 @@ export class Kernel {
     if(!processFrom) throw new Error(`Process ${process_from} not found`)
     if(!processTo) throw new Error(`Process ${process_to} not found`)
     
-    // Convert kernel direction enum to Direction enum
     const dir = direction as unknown as Direction
     if(dir === Direction.NONE) throw new Error(`Direction cannot be NONE`)
     
@@ -190,19 +212,23 @@ export class Kernel {
     if(!processFrom) throw new Error(`Process ${process_from} not found`)
     if(!processTo) throw new Error(`Process ${process_to} not found`)
     
-    // Convert kernel direction enum to Direction enum
     const dir = direction as unknown as Direction
     if(dir === Direction.NONE) throw new Error(`Direction cannot be NONE`)
     
     processFrom.unbind(processTo, socket_from, socket_to, dir)
   }
 
-  async monitor(target: process_id, monitor: process_id, monitor_socket: socket_id): Promise<void> {
+  async monitor(
+    target: process_id,
+    monitor: process_id,
+    monitor_socket: socket_id,
+    config: MonitorConfig = { flags: DEFAULT_MONITOR_FLAGS }
+  ): Promise<void> {
     const targetProcess = this.processes[target]
     const monitorProcess = this.processes[monitor]
     if(!targetProcess) throw new Error(`Target process ${target} not found`)
     if(!monitorProcess) throw new Error(`Monitor process ${monitor} not found`)
-    monitorProcess.monitor(targetProcess, monitor_socket)
+    monitorProcess.monitor(targetProcess, monitor_socket, config)
   }
 
   async demonitor(target: process_id, monitor: process_id, monitor_socket: socket_id): Promise<void> {
@@ -221,6 +247,16 @@ export class Kernel {
     }
     const oldMana = processInstance.manaUsed
     processInstance.useMana(new_mana)
+    this.monitorEmitter.emitToMonitors(
+      processInstance,
+      monitor_flag.MANA,
+      'process_measure_mana_event',
+      () => ({
+        _type: 'process_measure_mana_event',
+        process,
+        new_mana,
+      })
+    )
     return oldMana
   }
 
@@ -230,6 +266,16 @@ export class Kernel {
       throw new Error(`Process ${process} not found`)
     }    
     processInstance.manaLimit = mana_limit
+    this.monitorEmitter.emitToMonitors(
+      processInstance,
+      monitor_flag.MANA,
+      'process_set_mana_limit_event',
+      () => ({
+        _type: 'process_set_mana_limit_event',
+        process,
+        mana_limit,
+      })
+    )
   }
 
 
@@ -245,18 +291,7 @@ export class Kernel {
       code: Uint8Array, memory: Uint8Array, memory_limit: number, mana_limit: number
     ): Promise<number> => this.resurect(code, memory, memory_limit, mana_limit)
     
-    types['kernel_save'].implementation = async (
-      id: number
-    ) => {
-      const process = this.processes[id]
-      const memory = await this.save(id)
-      return {
-        snapshot_uid: 0n,
-        memory,
-        mana_used: process?.manaUsed ?? 0,
-        mana_limit: process?.manaLimit ?? 0,
-      }
-    }
+    types['kernel_save'].implementation = (id: number) => this.save(id)
 
     types['kernel_kill'].implementation = (
       id: number
@@ -276,8 +311,8 @@ export class Kernel {
 
     types['kernel_monitor'].implementation = (
       target: number, monitor: number, monitor_socket: number,
-      _config: { flags: number }
-    ): Promise<void> => this.monitor(target, monitor, monitor_socket)
+      config: MonitorConfig
+    ): Promise<void> => this.monitor(target, monitor, monitor_socket, config)
 
     types['kernel_demonitor'].implementation = (
       target: number, monitor: number, monitor_socket: number
@@ -293,5 +328,9 @@ export class Kernel {
     
     registry.assignMethodIds()
     return registry
+  }
+
+  onMonitorRelationAdded(target: Process, monitorEntry: import('./Process.js').ProcessMonitor): void {
+    emitInitialBufferStates(target, monitorEntry, this.monitorEmitter)
   }
 }

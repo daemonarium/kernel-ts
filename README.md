@@ -185,11 +185,13 @@ For `process_socket_state_event`, `direction` selects which circular buffer is d
 
 **Event ordering** for one pump operation: replay events (`Copy`, `Data`, `Drain`) are emitted **before** the process callback; `process_socket_state_event` is emitted **after** the operation when buffer offsets changed and `BUFFER_*` flags are set.
 
-**Recording backpressure** (target behavior, implementation pending): bytes in a `process_copy_event` (header + optional trailing payload) are limited by `min(source readable, destination writable, monitor socket space for the frame)`. Events must not be silently dropped — a full monitor buffer blocks the pump to preserve replay determinism.
+**Recording backpressure:** bytes in a `process_copy_event` (header + optional trailing payload) are limited by `min(source readable, destination writable, monitor socket space for the frame)`. Events must not be silently dropped — a full monitor buffer blocks the pump (`amount = 0`) to preserve replay determinism. Monitor input buffers are **not** auto-grown by the kernel.
 
-### Future work: Drain
+**Save backpressure:** `kernel.save(target)` awaits delivery of `process_save_event` to all monitors with the `SAVE` flag. If a monitor input buffer is full, `save()` waits until the recorder consumes data (same backpressure model as the pump, but async await instead of stall). Hard errors (missing process/socket) still throw; buffer-full is not an error.
 
-`process_drain_event` and `DRAIN` flag are defined in the contract. Pump-side drain handling and event emission are high-priority follow-up work. Once implemented, drain events go **before** `waos_socket_output_drain`, and `process_socket_state_event` follows when the output buffer changed.
+### Drain
+
+`process_drain_event` and `DRAIN` flag are emitted **before** deferred `handleDrain` when the producer output buffer is at or below `drainEventThreshold` after consumer `handleData`. `process_socket_state_event` follows when buffer offsets changed.
 
 ```mermaid
 sequenceDiagram

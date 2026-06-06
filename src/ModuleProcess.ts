@@ -13,12 +13,12 @@ import {
   ModuleSockets,
   Socket,
   TypedValue,
-  CodecRegistry,
-  LocalCircularBuffer,
-  LocalCircularBufferWriter
 } from "@wa-os/ts-rpc";
-import { serializeValueByType, registerAllRuntimeCodecs } from "@wa-os/ts-rpc/src/valueSerialization.js";
 import type { process_killed_event, process_error_event } from './kernelApi.js'
+import { ProcessRuntimeState } from './ProcessRuntimeState.js'
+import type { MonitorConfig } from './monitorFlags.js'
+import { DEFAULT_MONITOR_FLAGS } from './monitorFlags.js'
+import { pumpFlush, pumpInputDrain } from './pump.js'
 
 export { SocketConnection, SocketConnectionDestination, ProcessMonitor }
 
@@ -94,34 +94,19 @@ function wasiImports(process: ModuleProcess) {
 }
 
 function wasmImports(process: ModuleProcess) {
+  const emitter = process.kernel.monitorEmitter
+  const backpressure = process.kernel.monitorBackpressure
   return {
     waos_socket_flush(socket: number) {
-      //debugger;
       try {
-        const socketConnection = process.socketConnections[socket]
-        if(socketConnection?.connectedTo) {
-          const copiedBytes = socketConnection.socket.outputBuffer
-            .copyTo(socketConnection.connectedTo.socket.inputBuffer)
-          if(copiedBytes > 0) {
-            /// TODO: use scheduler when under load
-            socketConnection.connectedTo.process.handleData(socketConnection.connectedTo.socket.index)
-          }
-        }
+        pumpFlush(process, socket, emitter, backpressure)
       } catch (error) {
         process.handleError(error instanceof Error ? error : new Error(String(error)))
       }
     },
     waos_socket_input_drain(socket: number) {
       try {
-        const socketConnection = process.socketConnections[socket]
-        const fromConn = socketConnection?.connectedFrom
-        if(fromConn) {
-          const copiedBytes = fromConn.socket.outputBuffer
-            .copyTo(socketConnection.socket.inputBuffer)
-          if(copiedBytes > 0) {
-            process.handleData(socket)
-          }
-        }
+        pumpInputDrain(process, socket, emitter, backpressure)
       } catch (error) {
         console.error(`  [drain] pid=${process.id} socket=${socket} ERROR:`, error)
         process.handleError(error instanceof Error ? error : new Error(String(error)))
@@ -138,6 +123,7 @@ export class ModuleProcess implements Process {
   kernel: Kernel
   id: process_id
   isAlive: boolean = true
+  runtime = new ProcessRuntimeState()
   maximumMemoryPages: number
 
   module?: WebAssembly.Module
@@ -164,6 +150,18 @@ export class ModuleProcess implements Process {
     this.maximumMemoryPages = maximumMemoryPages
     this.manaUsed = 0
     this.manaLimit = manaLimit
+  }
+
+  pausePump(): void {
+    this.runtime.pausePump()
+  }
+
+  resumePump(): void {
+    this.runtime.resumePump()
+  }
+
+  isPumpPaused(): boolean {
+    return this.runtime.isPumpPaused()
   }
 
   /** set the module code directly from binary data */
@@ -360,6 +358,7 @@ export class ModuleProcess implements Process {
     } catch (error) {
       this.handleError(error instanceof Error ? error : new Error(String(error)))
     }
+    this.kernel.monitorBackpressure.notifyInputConsumed(this.id, socket_id)
   }
 
   /**
@@ -393,32 +392,12 @@ export class ModuleProcess implements Process {
    * This helper method handles serialization and writing to a socket's input buffer,
    * then triggers the process to handle the data.
    */
-  serializeToSocket(socket: socket_id, value: TypedValue, typeRegistry: TypeRegistry): void {
-    if (!this.moduleSockets) {
-      throw new Error('Process not started - moduleSockets not initialized')
-    }
-
-    const socketInstance = this.moduleSockets.getSocket(socket)
-    if (!socketInstance) {
-      throw new Error(`Socket ${socket} not found in process ${this.id}`)
-    }
-
-    const type = typeRegistry.getTypeByName(value._type)
-    if (!type) {
-      throw new Error(`Type ${value._type} not found in type registry`)
-    }
-
-    const codecs = new (CodecRegistry as any)()
-    registerAllRuntimeCodecs(codecs as any, typeRegistry as any)
-
-    const tempBuffer = new LocalCircularBuffer(Math.max(1024, socketInstance.inputBuffer.writableBytes() + 1))
-    const writer = new LocalCircularBufferWriter(tempBuffer, codecs as any)
-    serializeValueByType(writer as any, typeRegistry as any, type, value)
-    writer.writeRest()
-    tempBuffer.commitWrite(writer.offset)
-    tempBuffer.copyTo(socketInstance.inputBuffer)
-
-    this.handleData(socket)
+  serializeToSocket(socket: socket_id, value: TypedValue, _typeRegistry: TypeRegistry): void {
+    this.kernel.monitorEmitter.deliverEvent(
+      { process: this, socket, config: { flags: 0 } },
+      value._type as string,
+      value as object
+    )
   }
 
   /**
@@ -478,35 +457,19 @@ export class ModuleProcess implements Process {
 
     if (monitorsToNotify.length > 0) {
       try {
-        // Get TypeRegistry from kernel
-        const typeRegistry = this.kernel.createRpcRegistry()
-
-        let event: TypedValue
         if (error !== undefined) {
-          event = {
+          this.kernel.monitorEmitter.emitLifecycleEvent(this, 'process_error_event', {
             _type: 'process_error_event',
             process: this.id,
-            error: error
-          } as TypedValue & process_error_event
+            error,
+          } as TypedValue & process_error_event)
         } else {
-          event = {
+          this.kernel.monitorEmitter.emitLifecycleEvent(this, 'process_killed_event', {
             _type: 'process_killed_event',
-            process: this.id
-          } as TypedValue & process_killed_event
-        }
-
-        for (const monitor of monitorsToNotify) {
-          try {
-            if (monitor.process && monitor.process.getSocket(monitor.socket)) {
-              monitor.process.serializeToSocket(monitor.socket, event, typeRegistry)
-            }
-          } catch (monitorError) {
-            // Log but don't fail - monitor process may have been killed
-            console.error(`Failed to notify monitor process ${monitor.process.id} on socket ${monitor.socket}:`, monitorError)
-          }
+            process: this.id,
+          } as TypedValue & process_killed_event)
         }
       } catch (notificationError) {
-        // Log but don't fail - cleanup should continue
         console.error(`Failed to notify monitors for process ${this.id}:`, notificationError)
       }
     }
@@ -679,7 +642,7 @@ export class ModuleProcess implements Process {
    *    
    * When process is destroyed this process will receive a notification.
    */
-  monitor(process: Process, socket_id: socket_id): void {
+  monitor(process: Process, socket_id: socket_id, config: MonitorConfig = { flags: DEFAULT_MONITOR_FLAGS }): void {
     if (!this.isAlive) {
       throw new Error(`Process ${this.id} is not alive`)
     }
@@ -705,8 +668,8 @@ export class ModuleProcess implements Process {
       throw new Error(`Process ${this.id} is already monitoring process ${process.id} on socket ${socket_id}`)
     }
 
-    process.addMonitor(this, socket_id)
-    this.monitoredProcesses.push(new ProcessMonitor(process, socket_id))
+    process.addMonitor(this, socket_id, config)
+    this.monitoredProcesses.push(new ProcessMonitor(process, socket_id, config))
   }
 
   /**
@@ -730,7 +693,7 @@ export class ModuleProcess implements Process {
     this.monitoredProcesses.splice(monitoredProcessIndex, 1)
   }
 
-  addMonitor(monitorProcess: Process, socket_id: socket_id): void {
+  addMonitor(monitorProcess: Process, socket_id: socket_id, config: MonitorConfig): void {
     if (!this.isAlive) {
       throw new Error(`Process ${this.id} is not alive`)
     }
@@ -742,7 +705,9 @@ export class ModuleProcess implements Process {
       throw new Error(`Process ${monitorProcess.id} is already monitoring process ${this.id} on socket ${socket_id}`)
     }
 
-    this.monitors.push(new ProcessMonitor(monitorProcess, socket_id))
+    const monitorEntry = new ProcessMonitor(monitorProcess, socket_id, config)
+    this.monitors.push(monitorEntry)
+    this.kernel.onMonitorRelationAdded(this, monitorEntry)
   }
 
   removeMonitor(monitorProcess: Process, socket_id: socket_id): void {
