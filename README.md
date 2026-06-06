@@ -20,6 +20,7 @@ The idea is:
 - keep kernel responsibilities small, deterministic, and portable
 - move higher-level features to the shield process and other user processes
 - keep cross-runtime behavior predictable by minimizing kernel surface area
+- keep deterministic process recording and replay at the kernel level (not in process-shield or other proxies)
 
 ## Core building blocks
 
@@ -87,6 +88,147 @@ Incoming monitor entries are managed explicitly via:
 - `removeMonitor(monitorProcess, socketId)`
 
 `monitor(...)` and `demonitor(...)` keep both sides of the relation consistent.
+
+Each monitor relation also carries a `monitor_config` with a `flags` bitmask. Flags select which `process_event` types the kernel emits to the monitor socket. See **Process recording and replay** below.
+
+## Process recording and replay
+
+Deterministic post-mortem debugging requires recording at the **kernel pump layer** — the moment bytes are copied between socket buffers and when `data`/`drain` callbacks run on a process. Proxy layers (such as process-shield) cannot provide faithful replay once a scheduler decouples queueing from delivery.
+
+### Monitoring vs recording
+
+Not every observer needs a full replay trace. Flags split into **monitoring** (live visualization, liveness) and **recording** (deterministic replay).
+
+| Preset | Flags | Use |
+|--------|-------|-----|
+| `LIVENESS` | `KILLED \| ERROR` | PID repository, tombstone contract |
+| `MONITORING` | `INITIAL_BUFFER_STATE \| INITIAL_BUFFER_DATA \| BUFFER_STATE \| BUFFER_DATA \| COPY \| MEMORY \| MANA \| KILLED \| ERROR` | Live observability, circular-buffer visualization |
+| `RECORDING` | `COPY \| COPY_PAYLOAD \| DATA \| DRAIN \| SAVE \| MANA \| KILLED \| ERROR` | Full trace for debug replay |
+
+- **`socket_state`** events are monitoring-only; replay uses `save` + `Copy` / `Data` / `Drain` (+ trailing payload).
+- **`COPY`** — transfer metadata (`amount`); useful for monitoring without byte capture.
+- **`COPY_PAYLOAD`** — trailing payload with copied bytes; required for replay.
+- **`INITIAL_BUFFER_*`** — buffer snapshot when observation starts.
+- **`BUFFER_*`** — buffer updates after `Copy` / `Data` / `Drain` when the process changed buffer offsets.
+
+Each monitor relation (target, monitor process, monitor socket) has its own flag set.
+
+Monitor events are sent as length-prefixed messages (`socket_message_channel` / `SocketMessageChannel`). The serialized struct is the message header; large binary data is appended as a **trailing message payload** after the header (via `begin_send` / `commit_send`), not embedded in the struct. This applies to `process_copy_event` (with `COPY_PAYLOAD`) and `process_socket_state_event` (with `INITIAL_BUFFER_DATA` / `BUFFER_DATA`).
+
+### Recording model: snapshot + FIFO I/O
+
+A recording session combines periodic memory snapshots with a FIFO stream of I/O events on the monitor socket:
+
+1. `monitor(target, recorder, socket, config)` — start observing the target with the desired flags.
+2. `save(target)` — anchor: returns `save_result { snapshot_uid, memory, mana_used, mana_limit }` and emits `process_save_event` to monitors with the `SAVE` flag. WASM linear memory includes socket circular-buffer data and read/write offsets (`ModuleCircularBuffer` lives inside linear memory). Host-side mana is included separately because it is not part of linear memory.
+3. Runtime — kernel emits replay events (`Copy` / `Data` / `Drain`, per config) **before** the corresponding process side effect, and monitoring events (`socket_state`, per config) **after** buffer state changes.
+4. Optional later `save(target)` calls — new snapshot anchors with incrementing `snapshot_uid` (per target process: 1, 2, 3…).
+5. On death — `process_killed_event` or `process_error_event` if enabled.
+
+**Replay** (conceptual): `resurect(code, memory_from_snapshot_uid)` plus replay of subsequent events in FIFO order from the monitor socket. No global sequence numbers are required — the monitor socket is an ordered pipe.
+
+**bind/unbind and kernel RPC** do not need separate event types. They appear as ordinary I/O on the process kernel API socket (for example socket 1 to kernel-shield) and are captured by `Copy`/`Data`/`Drain` when I/O flags are enabled.
+
+### Debug replay model
+
+Replay runs an **isolated WASM process** without the kernel, binds, or peers. Recorded IN/OUT on sockets replaces the external world.
+
+- **Copy → Data/Drain order** — the kernel copies bytes first, then invokes `waos_socket_data` / `waos_socket_output_drain`. Replay must respect this FIFO order.
+- **OUT assertion** — `Copy` with direction `OUT` and `COPY_PAYLOAD` is a debug assertion: replay compares emitted bytes with the recording. A mismatch indicates a bug, not a soft failure.
+- **Mana** — `waos_use_mana` inside WASM is deterministic and needs no event. External `measure_mana` / `set_mana_limit` affect host-side state and emit `MANA` events; `save_result` carries `mana_used` / `mana_limit` at snapshot time.
+- **`save`** is also used outside replay (resume, inspection).
+- **WASI** (e.g. `printf`) is ignored for now — it does not change WASM determinism.
+
+### Monitor config flags
+
+Configuration is passed as `monitor_config { flags: uint32 }` — a bitwise OR of `monitor_flag` values (plain enum constants, not C++ bitfields, because serialization does not support bitfields).
+
+| Flag | Purpose |
+|------|---------|
+| `COPY` | `process_copy_event` metadata (`amount`) |
+| `COPY_PAYLOAD` | Trailing payload on `process_copy_event` |
+| `DATA` | `process_data_event` **before** `handleData` |
+| `DRAIN` | `process_drain_event` **before** `handleDrain` |
+| `INITIAL_BUFFER_STATE` | `process_socket_state_event` at monitor start (offsets only) |
+| `INITIAL_BUFFER_DATA` | Same + trailing payload with buffer contents |
+| `BUFFER_STATE` | `process_socket_state_event` after buffer change (offsets only) |
+| `BUFFER_DATA` | Same + trailing payload after buffer change |
+| `SAVE` | `process_save_event` on each `save` |
+| `MANA` | `process_measure_mana_event` / `process_set_mana_limit_event` |
+| `MEMORY` | `process_memory_event` (linear memory size) |
+| `KILLED` / `ERROR` | Death notifications |
+
+### Event semantics
+
+All events inherit from `process_event` with field `process` = monitored target id.
+
+**Direction** is relative to the **monitored process**:
+
+- `OUT` — output buffer of the socket (data leaving the process on flush)
+- `IN` — input buffer of the socket (data entering the process on drain)
+
+For `process_socket_state_event`, `direction` selects which circular buffer is described (`IN` = input buffer, `OUT` = output buffer). Readable byte count can be derived from `read_offset`, `write_offset`, and `buffer_size`.
+
+| Event | Flags | When emitted | Fields | Notes |
+|-------|-------|--------------|--------|-------|
+| `process_socket_state_event` | `INITIAL_BUFFER_*` | On `monitor()` | `socket`, `direction`, `buffer_size`, `read_offset`, `write_offset` | Monitoring only; optional trailing payload with `*_BUFFER_DATA` |
+| `process_socket_state_event` | `BUFFER_*` | After `Copy` / `Data` / `Drain` if buffer changed | same | Emitted **after** the operation; only when offsets/capacity changed |
+| `process_copy_event` | `COPY` / payload: `COPY_PAYLOAD` | Each byte pump | `socket`, `direction`, `amount` | With `COPY_PAYLOAD`, kernel appends copied bytes as trailing payload |
+| `process_data_event` | `DATA` | **Before** `handleData` / `waos_socket_data` | `socket`, `direction` | Replay event; separate from `Copy` for scheduler correctness |
+| `process_drain_event` | `DRAIN` | **Before** `handleDrain` / `waos_socket_output_drain` | `socket`, `direction` | Replay event; pump support pending (see below) |
+| `process_measure_mana_event` | `MANA` | After `measure_mana` | `new_mana` | External mana injection |
+| `process_set_mana_limit_event` | `MANA` | After `set_mana_limit` | `mana_limit` | External mana limit change |
+| `process_save_event` | `SAVE` | Each `kernel.save(target)` | `snapshot_uid` | Log anchor; same uid as in `save_result` |
+| `process_memory_event` | `MEMORY` | Monitor start + each WASM memory grow | `size` | Linear memory size in bytes |
+| `process_killed_event` | `KILLED` | `kill()` without error | — | Existing type |
+| `process_error_event` | `ERROR` | `kill(error)` | `error` | Existing type |
+
+**Event ordering** for one pump operation: replay events (`Copy`, `Data`, `Drain`) are emitted **before** the process callback; `process_socket_state_event` is emitted **after** the operation when buffer offsets changed and `BUFFER_*` flags are set.
+
+**Recording backpressure** (target behavior, implementation pending): bytes in a `process_copy_event` (header + optional trailing payload) are limited by `min(source readable, destination writable, monitor socket space for the frame)`. Events must not be silently dropped — a full monitor buffer blocks the pump to preserve replay determinism.
+
+### Future work: Drain
+
+`process_drain_event` and `DRAIN` flag are defined in the contract. Pump-side drain handling and event emission are high-priority follow-up work. Once implemented, drain events go **before** `waos_socket_output_drain`, and `process_socket_state_event` follows when the output buffer changed.
+
+```mermaid
+sequenceDiagram
+  participant Kernel
+  participant Target as TargetProcess
+  participant Monitor as MonitorSocket
+
+  Note over Kernel: replay events BEFORE side effects
+  Kernel->>Monitor: process_copy_event optional
+  Kernel->>Monitor: process_data_event optional
+  Kernel->>Target: waos_socket_data or drain export
+  Note over Kernel: monitoring events AFTER buffer changed
+  Kernel->>Monitor: process_socket_state_event optional
+```
+
+```mermaid
+flowchart LR
+  subgraph kernelPump [Kernel pump]
+    Flush[flush / input_drain]
+    Flush --> CopyStep[copyTo peer buffer]
+    Flush --> TeeCopy[emit process_copy_event]
+    Flush --> TeeData[emit process_data_event before call]
+    Flush --> ProcessCb[waos_socket_data / drain]
+    ProcessCb --> TeeState[emit process_socket_state_event]
+  end
+
+  subgraph monitorSocket [Monitor socket FIFO]
+    E0[socket_state initial]
+    E1[Save uid]
+    E2[Copy / Data / Drain]
+    E3[socket_state updates]
+    E4[Memory / Mana / Killed / Error]
+  end
+
+  TeeCopy --> E2
+  TeeData --> E2
+  TeeState --> E3
+  kernelSave[kernel.save] --> E1
+```
 
 ## Kill behavior
 

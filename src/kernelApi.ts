@@ -2,24 +2,30 @@
 import { TypeRegistry, TypeDescription, TypeKind } from '@wa-os/ts-rpc'
 
 // TypeScript type definitions
-export interface rpc_request_16 {
+// type index: 16
+export interface rpc_request {
   request_id: bigint
   function_id: bigint
 }
 
-export interface rpc_response_17 {
+// type index: 17
+export interface rpc_response {
   request_id: bigint
 }
 
-export interface rpc_error_18 {
+// type index: 18
+export interface rpc_error {
   request_id: bigint
 }
 
-export interface read_annotation_20 {}
+// type index: 20
+export interface read_annotation {}
 
-export interface member_annotation_21 {}
+// type index: 21
+export interface member_annotation {}
 
-export interface kernel_22 {
+// type index: 22
+export interface kernel {
   "kernel.spawn": any
   "kernel.resurect": any
   "kernel.save": any
@@ -32,21 +38,104 @@ export interface kernel_22 {
   "kernel.set_mana_limit": any
 }
 
-export enum direction_28 {
+// type index: 26
+export interface save_result {
+  snapshot_uid: bigint
+  memory: Uint8Array
+  mana_used: number
+  mana_limit: number
+}
+
+// type index: 29
+export enum direction {
   NONE = 0,
   IN = 1,
   OUT = 2,
   BOTH = 3
 }
 
-export interface process_killed_event_34 {}
+// type index: 32
+export interface monitor_config {
+  flags: number
+}
 
-export interface process_event_35 {
+// type index: 36
+export enum monitor_flag {
+  NONE = 0,
+  KILLED = 1,
+  ERROR = 2,
+  COPY = 4,
+  COPY_PAYLOAD = 8,
+  DATA = 16,
+  DRAIN = 32,
+  SAVE = 64,
+  MEMORY = 128,
+  INITIAL_BUFFER_STATE = 256,
+  INITIAL_BUFFER_DATA = 512,
+  BUFFER_STATE = 1024,
+  BUFFER_DATA = 2048,
+  MANA = 4096
+}
+
+// type index: 37
+export interface process_killed_event {}
+
+// type index: 38
+export interface process_event {
   process: number
 }
 
-export interface process_error_event_36 {
+// type index: 39
+export interface process_error_event {
   error: string
+}
+
+// type index: 40
+export interface process_copy_event {
+  socket: number
+  direction: direction
+  amount: number
+}
+
+// type index: 41
+export interface process_data_event {
+  socket: number
+  direction: direction
+}
+
+// type index: 42
+export interface process_drain_event {
+  socket: number
+  direction: direction
+}
+
+// type index: 43
+export interface process_save_event {
+  snapshot_uid: bigint
+}
+
+// type index: 44
+export interface process_memory_event {
+  size: number
+}
+
+// type index: 45
+export interface process_socket_state_event {
+  socket: number
+  direction: direction
+  buffer_size: number
+  read_offset: number
+  write_offset: number
+}
+
+// type index: 46
+export interface process_measure_mana_event {
+  new_mana: number
+}
+
+// type index: 47
+export interface process_set_mana_limit_event {
+  mana_limit: number
 }
 
 
@@ -55,589 +144,912 @@ export function createGeneratedTypeRegistry(): { registry: TypeRegistry, types: 
   const types: { [key: string]: TypeDescription } = {}
 
   // Declare types (without members/item/key yet)
-  const void_0 = TypeDescription.create({
+  // type index: 0
+  const void_ = TypeDescription.create({
     name: "void",
     kind: TypeKind.Void,
   })
-  types['void_0'] = void_0
+  types['void_'] = void_
 
-  const bool_1 = TypeDescription.create({
+  // type index: 1
+  const bool = TypeDescription.create({
     name: "bool",
     kind: TypeKind.Boolean,
   })
-  types['bool_1'] = bool_1
+  types['bool'] = bool
 
-  const uint8_2 = TypeDescription.create({
+  // type index: 2
+  const uint8 = TypeDescription.create({
     name: "uint8",
     kind: TypeKind.UnsignedInteger8,
   })
-  types['uint8_2'] = uint8_2
+  types['uint8'] = uint8
 
-  const sint8_3 = TypeDescription.create({
+  // type index: 3
+  const sint8 = TypeDescription.create({
     name: "sint8",
     kind: TypeKind.SignedInteger8,
   })
-  types['sint8_3'] = sint8_3
+  types['sint8'] = sint8
 
-  const uint16_4 = TypeDescription.create({
+  // type index: 4
+  const uint16 = TypeDescription.create({
     name: "uint16",
     kind: TypeKind.UnsignedInteger16,
   })
-  types['uint16_4'] = uint16_4
+  types['uint16'] = uint16
 
-  const sint16_5 = TypeDescription.create({
+  // type index: 5
+  const sint16 = TypeDescription.create({
     name: "sint16",
     kind: TypeKind.SignedInteger16,
   })
-  types['sint16_5'] = sint16_5
+  types['sint16'] = sint16
 
-  const uint32_6 = TypeDescription.create({
+  // type index: 6
+  const uint32 = TypeDescription.create({
     name: "uint32",
     kind: TypeKind.UnsignedInteger32,
   })
-  types['uint32_6'] = uint32_6
+  types['uint32'] = uint32
 
-  const sint32_7 = TypeDescription.create({
+  // type index: 7
+  const sint32 = TypeDescription.create({
     name: "sint32",
     kind: TypeKind.SignedInteger32,
   })
-  types['sint32_7'] = sint32_7
+  types['sint32'] = sint32
 
-  const uint64_8 = TypeDescription.create({
+  // type index: 8
+  const uint64 = TypeDescription.create({
     name: "uint64",
     kind: TypeKind.UnsignedInteger64,
   })
-  types['uint64_8'] = uint64_8
+  types['uint64'] = uint64
 
-  const sint64_9 = TypeDescription.create({
+  // type index: 9
+  const sint64 = TypeDescription.create({
     name: "sint64",
     kind: TypeKind.SignedInteger64,
   })
-  types['sint64_9'] = sint64_9
+  types['sint64'] = sint64
 
-  const float32_10 = TypeDescription.create({
+  // type index: 10
+  const float32 = TypeDescription.create({
     name: "float32",
     kind: TypeKind.FloatingPoint32,
   })
-  types['float32_10'] = float32_10
+  types['float32'] = float32
 
-  const float64_11 = TypeDescription.create({
+  // type index: 11
+  const float64 = TypeDescription.create({
     name: "float64",
     kind: TypeKind.FloatingPoint64,
   })
-  types['float64_11'] = float64_11
+  types['float64'] = float64
 
-  const string_12 = TypeDescription.create({
+  // type index: 12
+  const string_ = TypeDescription.create({
     name: "string",
     kind: TypeKind.String,
   })
-  types['string_12'] = string_12
+  types['string_'] = string_
 
-  const binary_13 = TypeDescription.create({
+  // type index: 13
+  const binary = TypeDescription.create({
     name: "binary",
     kind: TypeKind.Binary,
   })
-  types['binary_13'] = binary_13
+  types['binary'] = binary
 
-  const pointer_14 = TypeDescription.create({
+  // type index: 14
+  const pointer = TypeDescription.create({
     name: "pointer",
     kind: TypeKind.Pointer,
   })
-  types['pointer_14'] = pointer_14
+  types['pointer'] = pointer
 
-  const map_15 = TypeDescription.create({
+  // type index: 15
+  const map = TypeDescription.create({
     name: "map",
     kind: TypeKind.Map,
   })
-  types['map_15'] = map_15
+  types['map'] = map
 
-  const rpc_request_16 = TypeDescription.create({
+  // type index: 16
+  const rpc_request = TypeDescription.create({
     name: "rpc_request",
     kind: TypeKind.Message,
   })
-  types['rpc_request_16'] = rpc_request_16
+  types['rpc_request'] = rpc_request
 
-  const rpc_response_17 = TypeDescription.create({
+  // type index: 17
+  const rpc_response = TypeDescription.create({
     name: "rpc_response",
     kind: TypeKind.Message,
   })
-  types['rpc_response_17'] = rpc_response_17
+  types['rpc_response'] = rpc_response
 
-  const rpc_error_18 = TypeDescription.create({
+  // type index: 18
+  const rpc_error = TypeDescription.create({
     name: "rpc_error",
     kind: TypeKind.Message,
   })
-  types['rpc_error_18'] = rpc_error_18
+  types['rpc_error'] = rpc_error
 
-  const unknown_exception_19 = TypeDescription.create({
+  // type index: 19
+  const unknown_exception = TypeDescription.create({
     name: "unknown_exception",
     kind: TypeKind.Exception,
   })
-  types['unknown_exception_19'] = unknown_exception_19
+  types['unknown_exception'] = unknown_exception
 
-  const read_annotation_20 = TypeDescription.create({
+  // type index: 20
+  const read_annotation = TypeDescription.create({
     name: "read_annotation",
     kind: TypeKind.DynamicObject,
     bases: [],
   })
-  types['read_annotation_20'] = read_annotation_20
+  types['read_annotation'] = read_annotation
 
-  const member_annotation_21 = TypeDescription.create({
+  // type index: 21
+  const member_annotation = TypeDescription.create({
     name: "member_annotation",
     kind: TypeKind.DynamicObject,
   })
-  types['member_annotation_21'] = member_annotation_21
+  types['member_annotation'] = member_annotation
 
-  const kernel_22 = TypeDescription.create({
+  // type index: 22
+  const kernel = TypeDescription.create({
     name: "kernel",
     kind: TypeKind.Object,
   })
-  types['kernel_22'] = kernel_22
+  types['kernel'] = kernel
 
-  const kernel_spawn_23 = TypeDescription.create({
+  // type index: 23
+  const kernel_spawn = TypeDescription.create({
     name: "kernel.spawn",
     kind: TypeKind.Function,
   })
-  types['kernel_spawn_23'] = kernel_spawn_23
+  types['kernel_spawn'] = kernel_spawn
 
-  const kernel_resurect_24 = TypeDescription.create({
+  // type index: 24
+  const kernel_resurect = TypeDescription.create({
     name: "kernel.resurect",
     kind: TypeKind.Function,
   })
-  types['kernel_resurect_24'] = kernel_resurect_24
+  types['kernel_resurect'] = kernel_resurect
 
-  const kernel_save_25 = TypeDescription.create({
+  // type index: 25
+  const kernel_save = TypeDescription.create({
     name: "kernel.save",
     kind: TypeKind.Function,
   })
-  types['kernel_save_25'] = kernel_save_25
+  types['kernel_save'] = kernel_save
 
-  const kernel_kill_26 = TypeDescription.create({
+  // type index: 26
+  const save_result = TypeDescription.create({
+    name: "save_result",
+    kind: TypeKind.Object,
+  })
+  types['save_result'] = save_result
+
+  // type index: 27
+  const kernel_kill = TypeDescription.create({
     name: "kernel.kill",
     kind: TypeKind.Function,
   })
-  types['kernel_kill_26'] = kernel_kill_26
+  types['kernel_kill'] = kernel_kill
 
-  const kernel_bind_27 = TypeDescription.create({
+  // type index: 28
+  const kernel_bind = TypeDescription.create({
     name: "kernel.bind",
     kind: TypeKind.Function,
   })
-  types['kernel_bind_27'] = kernel_bind_27
+  types['kernel_bind'] = kernel_bind
 
-  const direction_28 = TypeDescription.create({
+  // type index: 29
+  const direction = TypeDescription.create({
     name: "direction",
     kind: TypeKind.Enum,
     enumMembers: [],
   })
-  types['direction_28'] = direction_28
+  types['direction'] = direction
 
-  const kernel_unbind_29 = TypeDescription.create({
+  // type index: 30
+  const kernel_unbind = TypeDescription.create({
     name: "kernel.unbind",
     kind: TypeKind.Function,
   })
-  types['kernel_unbind_29'] = kernel_unbind_29
+  types['kernel_unbind'] = kernel_unbind
 
-  const kernel_monitor_30 = TypeDescription.create({
+  // type index: 31
+  const kernel_monitor = TypeDescription.create({
     name: "kernel.monitor",
     kind: TypeKind.Function,
   })
-  types['kernel_monitor_30'] = kernel_monitor_30
+  types['kernel_monitor'] = kernel_monitor
 
-  const kernel_demonitor_31 = TypeDescription.create({
+  // type index: 32
+  const monitor_config = TypeDescription.create({
+    name: "monitor_config",
+    kind: TypeKind.Object,
+  })
+  types['monitor_config'] = monitor_config
+
+  // type index: 33
+  const kernel_demonitor = TypeDescription.create({
     name: "kernel.demonitor",
     kind: TypeKind.Function,
   })
-  types['kernel_demonitor_31'] = kernel_demonitor_31
+  types['kernel_demonitor'] = kernel_demonitor
 
-  const kernel_measure_mana_32 = TypeDescription.create({
+  // type index: 34
+  const kernel_measure_mana = TypeDescription.create({
     name: "kernel.measure_mana",
     kind: TypeKind.Function,
   })
-  types['kernel_measure_mana_32'] = kernel_measure_mana_32
+  types['kernel_measure_mana'] = kernel_measure_mana
 
-  const kernel_set_mana_limit_33 = TypeDescription.create({
+  // type index: 35
+  const kernel_set_mana_limit = TypeDescription.create({
     name: "kernel.set_mana_limit",
     kind: TypeKind.Function,
   })
-  types['kernel_set_mana_limit_33'] = kernel_set_mana_limit_33
+  types['kernel_set_mana_limit'] = kernel_set_mana_limit
 
-  const process_killed_event_34 = TypeDescription.create({
+  // type index: 36
+  const monitor_flag = TypeDescription.create({
+    name: "monitor_flag",
+    kind: TypeKind.Enum,
+    enumMembers: [],
+  })
+  types['monitor_flag'] = monitor_flag
+
+  // type index: 37
+  const process_killed_event = TypeDescription.create({
     name: "process_killed_event",
     kind: TypeKind.Message,
     bases: [],
   })
-  types['process_killed_event_34'] = process_killed_event_34
+  types['process_killed_event'] = process_killed_event
 
-  const process_event_35 = TypeDescription.create({
+  // type index: 38
+  const process_event = TypeDescription.create({
     name: "process_event",
     kind: TypeKind.Object,
   })
-  types['process_event_35'] = process_event_35
+  types['process_event'] = process_event
 
-  const process_error_event_36 = TypeDescription.create({
+  // type index: 39
+  const process_error_event = TypeDescription.create({
     name: "process_error_event",
     kind: TypeKind.Message,
     bases: [],
   })
-  types['process_error_event_36'] = process_error_event_36
+  types['process_error_event'] = process_error_event
+
+  // type index: 40
+  const process_copy_event = TypeDescription.create({
+    name: "process_copy_event",
+    kind: TypeKind.Message,
+    bases: [],
+  })
+  types['process_copy_event'] = process_copy_event
+
+  // type index: 41
+  const process_data_event = TypeDescription.create({
+    name: "process_data_event",
+    kind: TypeKind.Message,
+    bases: [],
+  })
+  types['process_data_event'] = process_data_event
+
+  // type index: 42
+  const process_drain_event = TypeDescription.create({
+    name: "process_drain_event",
+    kind: TypeKind.Message,
+    bases: [],
+  })
+  types['process_drain_event'] = process_drain_event
+
+  // type index: 43
+  const process_save_event = TypeDescription.create({
+    name: "process_save_event",
+    kind: TypeKind.Message,
+    bases: [],
+  })
+  types['process_save_event'] = process_save_event
+
+  // type index: 44
+  const process_memory_event = TypeDescription.create({
+    name: "process_memory_event",
+    kind: TypeKind.Message,
+    bases: [],
+  })
+  types['process_memory_event'] = process_memory_event
+
+  // type index: 45
+  const process_socket_state_event = TypeDescription.create({
+    name: "process_socket_state_event",
+    kind: TypeKind.Message,
+    bases: [],
+  })
+  types['process_socket_state_event'] = process_socket_state_event
+
+  // type index: 46
+  const process_measure_mana_event = TypeDescription.create({
+    name: "process_measure_mana_event",
+    kind: TypeKind.Message,
+    bases: [],
+  })
+  types['process_measure_mana_event'] = process_measure_mana_event
+
+  // type index: 47
+  const process_set_mana_limit_event = TypeDescription.create({
+    name: "process_set_mana_limit_event",
+    kind: TypeKind.Message,
+    bases: [],
+  })
+  types['process_set_mana_limit_event'] = process_set_mana_limit_event
 
   // Register all types to preserve indices
-  registry.registerType(void_0)
-  registry.registerType(bool_1)
-  registry.registerType(uint8_2)
-  registry.registerType(sint8_3)
-  registry.registerType(uint16_4)
-  registry.registerType(sint16_5)
-  registry.registerType(uint32_6)
-  registry.registerType(sint32_7)
-  registry.registerType(uint64_8)
-  registry.registerType(sint64_9)
-  registry.registerType(float32_10)
-  registry.registerType(float64_11)
-  registry.registerType(string_12)
-  registry.registerType(binary_13)
-  registry.registerType(pointer_14)
-  registry.registerType(map_15)
-  registry.registerType(rpc_request_16)
-  registry.registerType(rpc_response_17)
-  registry.registerType(rpc_error_18)
-  registry.registerType(unknown_exception_19)
-  registry.registerType(read_annotation_20)
-  registry.registerType(member_annotation_21)
-  registry.registerType(kernel_22)
-  registry.registerType(kernel_spawn_23)
-  registry.registerType(kernel_resurect_24)
-  registry.registerType(kernel_save_25)
-  registry.registerType(kernel_kill_26)
-  registry.registerType(kernel_bind_27)
-  registry.registerType(direction_28)
-  registry.registerType(kernel_unbind_29)
-  registry.registerType(kernel_monitor_30)
-  registry.registerType(kernel_demonitor_31)
-  registry.registerType(kernel_measure_mana_32)
-  registry.registerType(kernel_set_mana_limit_33)
-  registry.registerType(process_killed_event_34)
-  registry.registerType(process_event_35)
-  registry.registerType(process_error_event_36)
+  registry.registerType(void_)
+  registry.registerType(bool)
+  registry.registerType(uint8)
+  registry.registerType(sint8)
+  registry.registerType(uint16)
+  registry.registerType(sint16)
+  registry.registerType(uint32)
+  registry.registerType(sint32)
+  registry.registerType(uint64)
+  registry.registerType(sint64)
+  registry.registerType(float32)
+  registry.registerType(float64)
+  registry.registerType(string_)
+  registry.registerType(binary)
+  registry.registerType(pointer)
+  registry.registerType(map)
+  registry.registerType(rpc_request)
+  registry.registerType(rpc_response)
+  registry.registerType(rpc_error)
+  registry.registerType(unknown_exception)
+  registry.registerType(read_annotation)
+  registry.registerType(member_annotation)
+  registry.registerType(kernel)
+  registry.registerType(kernel_spawn)
+  registry.registerType(kernel_resurect)
+  registry.registerType(kernel_save)
+  registry.registerType(save_result)
+  registry.registerType(kernel_kill)
+  registry.registerType(kernel_bind)
+  registry.registerType(direction)
+  registry.registerType(kernel_unbind)
+  registry.registerType(kernel_monitor)
+  registry.registerType(monitor_config)
+  registry.registerType(kernel_demonitor)
+  registry.registerType(kernel_measure_mana)
+  registry.registerType(kernel_set_mana_limit)
+  registry.registerType(monitor_flag)
+  registry.registerType(process_killed_event)
+  registry.registerType(process_event)
+  registry.registerType(process_error_event)
+  registry.registerType(process_copy_event)
+  registry.registerType(process_data_event)
+  registry.registerType(process_drain_event)
+  registry.registerType(process_save_event)
+  registry.registerType(process_memory_event)
+  registry.registerType(process_socket_state_event)
+  registry.registerType(process_measure_mana_event)
+  registry.registerType(process_set_mana_limit_event)
 
   // Fill enumMembers, bases, item/key
-  read_annotation_20.bases = [
-    member_annotation_21,
+  read_annotation.bases = [
+    member_annotation,
   ]
 
-  kernel_spawn_23.item = uint32_6
+  kernel_spawn.item = uint32
 
-  kernel_resurect_24.item = uint32_6
+  kernel_resurect.item = uint32
 
-  kernel_save_25.item = binary_13
+  kernel_save.item = save_result
 
-  kernel_kill_26.item = void_0
+  kernel_kill.item = void_
 
-  kernel_bind_27.item = void_0
+  kernel_bind.item = void_
 
-  direction_28.enumMembers = [
+  direction.enumMembers = [
     { name: "NONE", value: 0 },
     { name: "IN", value: 1 },
     { name: "OUT", value: 2 },
     { name: "BOTH", value: 3 },
   ]
 
-  kernel_unbind_29.item = void_0
+  kernel_unbind.item = void_
 
-  kernel_monitor_30.item = void_0
+  kernel_monitor.item = void_
 
-  kernel_demonitor_31.item = void_0
+  kernel_demonitor.item = void_
 
-  kernel_measure_mana_32.item = uint32_6
+  kernel_measure_mana.item = uint32
 
-  kernel_set_mana_limit_33.item = void_0
+  kernel_set_mana_limit.item = void_
 
-  process_killed_event_34.bases = [
-    process_event_35,
+  monitor_flag.enumMembers = [
+    { name: "NONE", value: 0 },
+    { name: "KILLED", value: 1 },
+    { name: "ERROR", value: 2 },
+    { name: "COPY", value: 4 },
+    { name: "COPY_PAYLOAD", value: 8 },
+    { name: "DATA", value: 16 },
+    { name: "DRAIN", value: 32 },
+    { name: "SAVE", value: 64 },
+    { name: "MEMORY", value: 128 },
+    { name: "INITIAL_BUFFER_STATE", value: 256 },
+    { name: "INITIAL_BUFFER_DATA", value: 512 },
+    { name: "BUFFER_STATE", value: 1024 },
+    { name: "BUFFER_DATA", value: 2048 },
+    { name: "MANA", value: 4096 },
   ]
 
-  process_error_event_36.bases = [
-    process_event_35,
+  process_killed_event.bases = [
+    process_event,
+  ]
+
+  process_error_event.bases = [
+    process_event,
+  ]
+
+  process_copy_event.bases = [
+    process_event,
+  ]
+
+  process_data_event.bases = [
+    process_event,
+  ]
+
+  process_drain_event.bases = [
+    process_event,
+  ]
+
+  process_save_event.bases = [
+    process_event,
+  ]
+
+  process_memory_event.bases = [
+    process_event,
+  ]
+
+  process_socket_state_event.bases = [
+    process_event,
+  ]
+
+  process_measure_mana_event.bases = [
+    process_event,
+  ]
+
+  process_set_mana_limit_event.bases = [
+    process_event,
   ]
 
   // Fill members (after all types exist)
-  rpc_request_16.members = [
+  rpc_request.members = [
     {
       name: "request_id",
-      type: uint64_8,
+      type: uint64,
       annotations: [],
     },
     {
       name: "function_id",
-      type: uint64_8,
+      type: uint64,
       annotations: [],
     },
   ]
 
-  rpc_response_17.members = [
+  rpc_response.members = [
     {
       name: "request_id",
-      type: uint64_8,
+      type: uint64,
       annotations: [],
     },
   ]
 
-  rpc_error_18.members = [
+  rpc_error.members = [
     {
       name: "request_id",
-      type: uint64_8,
+      type: uint64,
       annotations: [],
     },
   ]
 
-  unknown_exception_19.members = [
+  unknown_exception.members = [
     {
       name: "what",
-      type: string_12,
+      type: string_,
       annotations: [],
     },
   ]
 
-  kernel_22.members = [
+  kernel.members = [
     {
       name: "kernel.spawn",
-      type: kernel_spawn_23,
+      type: kernel_spawn,
       annotations: [],
     },
     {
       name: "kernel.resurect",
-      type: kernel_resurect_24,
+      type: kernel_resurect,
       annotations: [],
     },
     {
       name: "kernel.save",
-      type: kernel_save_25,
+      type: kernel_save,
       annotations: [],
     },
     {
       name: "kernel.kill",
-      type: kernel_kill_26,
+      type: kernel_kill,
       annotations: [],
     },
     {
       name: "kernel.bind",
-      type: kernel_bind_27,
+      type: kernel_bind,
       annotations: [],
     },
     {
       name: "kernel.unbind",
-      type: kernel_unbind_29,
+      type: kernel_unbind,
       annotations: [],
     },
     {
       name: "kernel.monitor",
-      type: kernel_monitor_30,
+      type: kernel_monitor,
       annotations: [],
     },
     {
       name: "kernel.demonitor",
-      type: kernel_demonitor_31,
+      type: kernel_demonitor,
       annotations: [],
     },
     {
       name: "kernel.measure_mana",
-      type: kernel_measure_mana_32,
+      type: kernel_measure_mana,
       annotations: [],
     },
     {
       name: "kernel.set_mana_limit",
-      type: kernel_set_mana_limit_33,
+      type: kernel_set_mana_limit,
       annotations: [],
     },
   ]
 
-  kernel_spawn_23.members = [
+  kernel_spawn.members = [
     {
       name: "code",
-      type: binary_13,
+      type: binary,
       annotations: [],
     },
     {
       name: "memory_limit",
-      type: uint32_6,
+      type: uint32,
       annotations: [],
     },
     {
       name: "mana_limit",
-      type: uint32_6,
+      type: uint32,
       annotations: [],
     },
   ]
 
-  kernel_resurect_24.members = [
+  kernel_resurect.members = [
     {
       name: "code",
-      type: binary_13,
+      type: binary,
       annotations: [],
     },
     {
       name: "memory",
-      type: binary_13,
+      type: binary,
       annotations: [],
     },
     {
       name: "memory_limit",
-      type: uint32_6,
+      type: uint32,
       annotations: [],
     },
     {
       name: "mana_limit",
-      type: uint32_6,
+      type: uint32,
       annotations: [],
     },
   ]
 
-  kernel_save_25.members = [
+  kernel_save.members = [
     {
       name: "id",
-      type: uint32_6,
+      type: uint32,
       annotations: [],
     },
   ]
 
-  kernel_kill_26.members = [
+  save_result.members = [
+    {
+      name: "snapshot_uid",
+      type: uint64,
+      annotations: [],
+    },
+    {
+      name: "memory",
+      type: binary,
+      annotations: [],
+    },
+    {
+      name: "mana_used",
+      type: uint32,
+      annotations: [],
+    },
+    {
+      name: "mana_limit",
+      type: uint32,
+      annotations: [],
+    },
+  ]
+
+  kernel_kill.members = [
     {
       name: "id",
-      type: uint32_6,
+      type: uint32,
       annotations: [],
     },
   ]
 
-  kernel_bind_27.members = [
+  kernel_bind.members = [
     {
       name: "process_from",
-      type: uint32_6,
+      type: uint32,
       annotations: [],
     },
     {
       name: "socket_from",
-      type: uint32_6,
+      type: uint32,
       annotations: [],
     },
     {
       name: "process_to",
-      type: uint32_6,
+      type: uint32,
       annotations: [],
     },
     {
       name: "socket_to",
-      type: uint32_6,
+      type: uint32,
       annotations: [],
     },
     {
       name: "direction",
-      type: direction_28,
+      type: direction,
       annotations: [],
     },
   ]
 
-  kernel_unbind_29.members = [
+  kernel_unbind.members = [
     {
       name: "process_from",
-      type: uint32_6,
+      type: uint32,
       annotations: [],
     },
     {
       name: "socket_from",
-      type: uint32_6,
+      type: uint32,
       annotations: [],
     },
     {
       name: "process_to",
-      type: uint32_6,
+      type: uint32,
       annotations: [],
     },
     {
       name: "socket_to",
-      type: uint32_6,
+      type: uint32,
       annotations: [],
     },
     {
       name: "direction",
-      type: direction_28,
+      type: direction,
       annotations: [],
     },
   ]
 
-  kernel_monitor_30.members = [
+  kernel_monitor.members = [
     {
       name: "target",
-      type: uint32_6,
+      type: uint32,
       annotations: [],
     },
     {
       name: "monitor",
-      type: uint32_6,
+      type: uint32,
       annotations: [],
     },
     {
       name: "monitor_socket",
-      type: uint32_6,
+      type: uint32,
+      annotations: [],
+    },
+    {
+      name: "config",
+      type: monitor_config,
       annotations: [],
     },
   ]
 
-  kernel_demonitor_31.members = [
+  monitor_config.members = [
+    {
+      name: "flags",
+      type: uint32,
+      annotations: [],
+    },
+  ]
+
+  kernel_demonitor.members = [
     {
       name: "target",
-      type: uint32_6,
+      type: uint32,
       annotations: [],
     },
     {
       name: "monitor",
-      type: uint32_6,
+      type: uint32,
       annotations: [],
     },
     {
       name: "monitor_socket",
-      type: uint32_6,
+      type: uint32,
       annotations: [],
     },
   ]
 
-  kernel_measure_mana_32.members = [
+  kernel_measure_mana.members = [
     {
       name: "process",
-      type: uint32_6,
+      type: uint32,
       annotations: [],
     },
     {
       name: "new_mana",
-      type: uint32_6,
+      type: uint32,
       annotations: [],
     },
   ]
 
-  kernel_set_mana_limit_33.members = [
+  kernel_set_mana_limit.members = [
     {
       name: "process",
-      type: uint32_6,
+      type: uint32,
       annotations: [],
     },
     {
       name: "mana_limit",
-      type: uint32_6,
+      type: uint32,
       annotations: [],
     },
   ]
 
-  process_event_35.members = [
+  process_event.members = [
     {
       name: "process",
-      type: uint32_6,
+      type: uint32,
       annotations: [],
     },
   ]
 
-  process_error_event_36.members = [
+  process_error_event.members = [
     {
       name: "error",
-      type: string_12,
+      type: string_,
+      annotations: [],
+    },
+  ]
+
+  process_copy_event.members = [
+    {
+      name: "socket",
+      type: uint32,
+      annotations: [],
+    },
+    {
+      name: "direction",
+      type: direction,
+      annotations: [],
+    },
+    {
+      name: "amount",
+      type: uint32,
+      annotations: [],
+    },
+  ]
+
+  process_data_event.members = [
+    {
+      name: "socket",
+      type: uint32,
+      annotations: [],
+    },
+    {
+      name: "direction",
+      type: direction,
+      annotations: [],
+    },
+  ]
+
+  process_drain_event.members = [
+    {
+      name: "socket",
+      type: uint32,
+      annotations: [],
+    },
+    {
+      name: "direction",
+      type: direction,
+      annotations: [],
+    },
+  ]
+
+  process_save_event.members = [
+    {
+      name: "snapshot_uid",
+      type: uint64,
+      annotations: [],
+    },
+  ]
+
+  process_memory_event.members = [
+    {
+      name: "size",
+      type: uint32,
+      annotations: [],
+    },
+  ]
+
+  process_socket_state_event.members = [
+    {
+      name: "socket",
+      type: uint32,
+      annotations: [],
+    },
+    {
+      name: "direction",
+      type: direction,
+      annotations: [],
+    },
+    {
+      name: "buffer_size",
+      type: uint32,
+      annotations: [],
+    },
+    {
+      name: "read_offset",
+      type: uint32,
+      annotations: [],
+    },
+    {
+      name: "write_offset",
+      type: uint32,
+      annotations: [],
+    },
+  ]
+
+  process_measure_mana_event.members = [
+    {
+      name: "new_mana",
+      type: uint32,
+      annotations: [],
+    },
+  ]
+
+  process_set_mana_limit_event.members = [
+    {
+      name: "mana_limit",
+      type: uint32,
       annotations: [],
     },
   ]
@@ -646,7 +1058,7 @@ export function createGeneratedTypeRegistry(): { registry: TypeRegistry, types: 
 }
 
 // Empty method implementations
-async function kernel_spawn_23_impl(
+async function kernel_spawn_impl(
   code: Uint8Array,
   memory_limit: number,
   mana_limit: number
@@ -655,7 +1067,7 @@ async function kernel_spawn_23_impl(
   return Promise.resolve(0)
 }
 
-async function kernel_resurect_24_impl(
+async function kernel_resurect_impl(
   code: Uint8Array,
   memory: Uint8Array,
   memory_limit: number,
@@ -665,43 +1077,53 @@ async function kernel_resurect_24_impl(
   return Promise.resolve(0)
 }
 
-async function kernel_save_25_impl(
+async function kernel_save_impl(
   id: number
-): Promise<Uint8Array> {
+): Promise<save_result> {
   /// TODO: implement
-  return Promise.resolve(null as any as Uint8Array)
+  return Promise.resolve(null as any as save_result)
 }
 
-async function kernel_kill_26_impl(
+async function kernel_kill_impl(
   id: number
 ): Promise<void> {
   /// TODO: implement
   return Promise.resolve()
 }
 
-async function kernel_bind_27_impl(
+async function kernel_bind_impl(
   process_from: number,
   socket_from: number,
   process_to: number,
   socket_to: number,
-  direction: direction_28
+  direction: direction
 ): Promise<void> {
   /// TODO: implement
   return Promise.resolve()
 }
 
-async function kernel_unbind_29_impl(
+async function kernel_unbind_impl(
   process_from: number,
   socket_from: number,
   process_to: number,
   socket_to: number,
-  direction: direction_28
+  direction: direction
 ): Promise<void> {
   /// TODO: implement
   return Promise.resolve()
 }
 
-async function kernel_monitor_30_impl(
+async function kernel_monitor_impl(
+  target: number,
+  monitor: number,
+  monitor_socket: number,
+  config: monitor_config
+): Promise<void> {
+  /// TODO: implement
+  return Promise.resolve()
+}
+
+async function kernel_demonitor_impl(
   target: number,
   monitor: number,
   monitor_socket: number
@@ -710,16 +1132,7 @@ async function kernel_monitor_30_impl(
   return Promise.resolve()
 }
 
-async function kernel_demonitor_31_impl(
-  target: number,
-  monitor: number,
-  monitor_socket: number
-): Promise<void> {
-  /// TODO: implement
-  return Promise.resolve()
-}
-
-async function kernel_measure_mana_32_impl(
+async function kernel_measure_mana_impl(
   process: number,
   new_mana: number
 ): Promise<number> {
@@ -727,7 +1140,7 @@ async function kernel_measure_mana_32_impl(
   return Promise.resolve(0)
 }
 
-async function kernel_set_mana_limit_33_impl(
+async function kernel_set_mana_limit_impl(
   process: number,
   mana_limit: number
 ): Promise<void> {
@@ -737,16 +1150,16 @@ async function kernel_set_mana_limit_33_impl(
 
 export function implementMethods(result: ReturnType<typeof createGeneratedTypeRegistry>): void {
   const { registry, types } = result
-  types['kernel_spawn_23'].implementation = kernel_spawn_23_impl
-  types['kernel_resurect_24'].implementation = kernel_resurect_24_impl
-  types['kernel_save_25'].implementation = kernel_save_25_impl
-  types['kernel_kill_26'].implementation = kernel_kill_26_impl
-  types['kernel_bind_27'].implementation = kernel_bind_27_impl
-  types['kernel_unbind_29'].implementation = kernel_unbind_29_impl
-  types['kernel_monitor_30'].implementation = kernel_monitor_30_impl
-  types['kernel_demonitor_31'].implementation = kernel_demonitor_31_impl
-  types['kernel_measure_mana_32'].implementation = kernel_measure_mana_32_impl
-  types['kernel_set_mana_limit_33'].implementation = kernel_set_mana_limit_33_impl
+  types['kernel_spawn'].implementation = kernel_spawn_impl
+  types['kernel_resurect'].implementation = kernel_resurect_impl
+  types['kernel_save'].implementation = kernel_save_impl
+  types['kernel_kill'].implementation = kernel_kill_impl
+  types['kernel_bind'].implementation = kernel_bind_impl
+  types['kernel_unbind'].implementation = kernel_unbind_impl
+  types['kernel_monitor'].implementation = kernel_monitor_impl
+  types['kernel_demonitor'].implementation = kernel_demonitor_impl
+  types['kernel_measure_mana'].implementation = kernel_measure_mana_impl
+  types['kernel_set_mana_limit'].implementation = kernel_set_mana_limit_impl
 }
 
 export function setupServer(): TypeRegistry {

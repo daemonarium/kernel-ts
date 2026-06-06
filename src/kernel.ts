@@ -2,7 +2,7 @@ import type Process from './Process.js'
 import { ModuleProcess } from './ModuleProcess.js'
 import { LocalProcess } from './LocalProcess.js'
 
-import { createGeneratedTypeRegistry, direction_28 } from './kernelApi.js'
+import { createGeneratedTypeRegistry, direction } from './kernelApi.js'
 
 import type { 
   process_id, socket_id
@@ -169,13 +169,13 @@ export class Kernel {
 
   async bind(process_from: process_id, socket_from: socket_id, 
              process_to: process_id, socket_to: socket_id, 
-             direction: direction_28): Promise<void> {
+             direction: direction): Promise<void> {
     const processFrom = this.processes[process_from]
     const processTo = this.processes[process_to]
     if(!processFrom) throw new Error(`Process ${process_from} not found`)
     if(!processTo) throw new Error(`Process ${process_to} not found`)
     
-    // Convert direction_15 enum to Direction enum
+    // Convert kernel direction enum to Direction enum
     const dir = direction as unknown as Direction
     if(dir === Direction.NONE) throw new Error(`Direction cannot be NONE`)
     
@@ -184,13 +184,13 @@ export class Kernel {
 
   async unbind(process_from: process_id, socket_from: socket_id,
                process_to: process_id, socket_to: socket_id,
-               direction: direction_28): Promise<void> {
+               direction: direction): Promise<void> {
     const processFrom = this.processes[process_from]
     const processTo = this.processes[process_to]
     if(!processFrom) throw new Error(`Process ${process_from} not found`)
     if(!processTo) throw new Error(`Process ${process_to} not found`)
     
-    // Convert direction_15 enum to Direction enum
+    // Convert kernel direction enum to Direction enum
     const dir = direction as unknown as Direction
     if(dir === Direction.NONE) throw new Error(`Direction cannot be NONE`)
     
@@ -221,7 +221,7 @@ export class Kernel {
     }
     const oldMana = processInstance.manaUsed
     processInstance.useMana(new_mana)
-    return processInstance.manaUsed
+    return oldMana
   }
 
   async set_mana_limit(process: process_id, mana_limit: number): Promise<void> {
@@ -237,47 +237,57 @@ export class Kernel {
     const result = createGeneratedTypeRegistry()
     const { registry, types } = result
     
-    types['kernel_spawn_23'].implementation = (
+    types['kernel_spawn'].implementation = (
       code: Uint8Array, memory_limit: number, mana_limit: number
     ): Promise<number> => this.spawn(code, memory_limit, mana_limit)
     
-    types['kernel_resurect_24'].implementation = (
+    types['kernel_resurect'].implementation = (
       code: Uint8Array, memory: Uint8Array, memory_limit: number, mana_limit: number
     ): Promise<number> => this.resurect(code, memory, memory_limit, mana_limit)
     
-    types['kernel_save_25'].implementation = (
+    types['kernel_save'].implementation = async (
       id: number
-    ): Promise<Uint8Array> => this.save(id)
-    
-    types['kernel_kill_26'].implementation = (
+    ) => {
+      const process = this.processes[id]
+      const memory = await this.save(id)
+      return {
+        snapshot_uid: 0n,
+        memory,
+        mana_used: process?.manaUsed ?? 0,
+        mana_limit: process?.manaLimit ?? 0,
+      }
+    }
+
+    types['kernel_kill'].implementation = (
       id: number
     ): Promise<void> => this.kill(id)
-    
-    types['kernel_bind_27'].implementation = (
+
+    types['kernel_bind'].implementation = (
       process_from: number, socket_from: number,
       process_to: number, socket_to: number,
-      direction: direction_28
+      direction: direction
     ): Promise<void> => this.bind(process_from, socket_from, process_to, socket_to, direction)
-    
-    types['kernel_unbind_29'].implementation = (
+
+    types['kernel_unbind'].implementation = (
       process_from: number, socket_from: number,
       process_to: number, socket_to: number,
-      direction: direction_28
+      direction: direction
     ): Promise<void> => this.unbind(process_from, socket_from, process_to, socket_to, direction)
-    
-    types['kernel_monitor_30'].implementation = (
-      target: number, monitor: number, monitor_socket: number
+
+    types['kernel_monitor'].implementation = (
+      target: number, monitor: number, monitor_socket: number,
+      _config: { flags: number }
     ): Promise<void> => this.monitor(target, monitor, monitor_socket)
-    
-    types['kernel_demonitor_31'].implementation = (
+
+    types['kernel_demonitor'].implementation = (
       target: number, monitor: number, monitor_socket: number
     ): Promise<void> => this.demonitor(target, monitor, monitor_socket)
-    
-    types['kernel_measure_mana_32'].implementation = (
+
+    types['kernel_measure_mana'].implementation = (
       process: number, new_mana: number
     ): Promise<number> => this.measure_mana(process, new_mana)
-    
-    types['kernel_set_mana_limit_33'].implementation = (
+
+    types['kernel_set_mana_limit'].implementation = (
       process: number, mana_limit: number
     ): Promise<void> => this.set_mana_limit(process, mana_limit)
     
