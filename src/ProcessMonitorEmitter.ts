@@ -71,7 +71,9 @@ export class ProcessMonitorEmitter {
     writer.writeRest()
 
     if (trailingPayload && trailingSize > 0) {
-      tempBuffer.write(trailingPayload, trailingSize)
+      // Poke trailing at writer.offset — do not use write(), which advances
+      // write_offset from 0 and would overwrite the poked header.
+      tempBuffer.poke(writer.offset, trailingPayload, trailingSize)
     }
 
     const payloadLen = writer.offset - LENGTH_SIZE + trailingSize
@@ -94,11 +96,12 @@ export class ProcessMonitorEmitter {
     if (socket.inputBuffer.writableBytes() < frame.length) {
       throw new Error(`Monitor socket ${monitor.socket} has insufficient space for frame`)
     }
+    // write() already advances the write offset (same as C++ circular_buffer_write).
+    // Do not call commitWrite afterward — that would double the readable size with zeros.
     const written = socket.inputBuffer.write(frame, frame.length)
     if (written !== frame.length) {
       throw new Error(`Failed to write full monitor frame (${written}/${frame.length} bytes)`)
     }
-    socket.inputBuffer.commitWrite(written)
     this.scheduleMonitorHandleData(monitor.process, monitor.socket)
   }
 
