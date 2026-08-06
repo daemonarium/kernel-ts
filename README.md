@@ -103,7 +103,7 @@ Not every observer needs a full replay trace. Flags split into **monitoring** (l
 |--------|-------|-----|
 | `LIVENESS` | `KILLED \| ERROR` | PID repository, tombstone contract |
 | `MONITORING` | `INITIAL_BUFFER_STATE \| INITIAL_BUFFER_DATA \| BUFFER_STATE \| BUFFER_DATA \| COPY \| MEMORY \| MANA \| KILLED \| ERROR` | Live observability, circular-buffer visualization |
-| `RECORDING` | `COPY \| COPY_PAYLOAD \| DATA \| DRAIN \| SAVE \| MANA \| KILLED \| ERROR` | Full trace for debug replay |
+| `RECORDING` | `COPY \| COPY_PAYLOAD \| DATA \| DRAIN \| SAVE \| MANA \| BIND \| KILLED \| ERROR` | Full trace for debug replay |
 
 - **`socket_state`** events are monitoring-only; replay uses `save` + `Copy` / `Data` / `Drain` (+ trailing payload).
 - **`COPY`** — transfer metadata (`amount`); useful for monitoring without byte capture.
@@ -127,7 +127,7 @@ A recording session combines periodic memory snapshots with a FIFO stream of I/O
 
 **Replay** (conceptual): `resurect(code, memory_from_snapshot_uid)` plus replay of subsequent events in FIFO order from the monitor socket. No global sequence numbers are required — the monitor socket is an ordered pipe.
 
-**bind/unbind and kernel RPC** do not need separate event types. They appear as ordinary I/O on the process kernel API socket (for example socket 1 to kernel-shield) and are captured by `Copy`/`Data`/`Drain` when I/O flags are enabled.
+**bind/unbind topology** is recorded with dedicated `process_bind_event` / `process_unbind_event` when the `BIND` flag is set. Host-side `kernel.bind` / `unbind` often leave no RPC footprint on the target’s kernel-API socket, so inferring topology from Copy/Data/Drain alone is incomplete. Kernel RPC traffic on that socket is still captured as ordinary I/O when Copy/Data/Drain flags are enabled.
 
 ### Debug replay model
 
@@ -155,6 +155,7 @@ Configuration is passed as `monitor_config { flags: uint32 }` — a bitwise OR o
 | `BUFFER_DATA` | Same + trailing payload after buffer change |
 | `SAVE` | `process_save_event` on each `save` |
 | `MANA` | `process_measure_mana_event` / `process_set_mana_limit_event` |
+| `BIND` | `process_bind_event` / `process_unbind_event` after successful `bind` / `unbind` |
 | `MEMORY` | `process_memory_event` (linear memory size) |
 | `KILLED` / `ERROR` | Death notifications |
 
@@ -180,6 +181,8 @@ For `process_socket_state_event`, `direction` selects which circular buffer is d
 | `process_set_mana_limit_event` | `MANA` | After `set_mana_limit` | `mana_limit` | External mana limit change |
 | `process_save_event` | `SAVE` | Each `kernel.save(target)` | `snapshot_uid` | Log anchor; same uid as in `save_result` |
 | `process_memory_event` | `MEMORY` | Monitor start + each WASM memory grow | `size` | Linear memory size in bytes |
+| `process_bind_event` | `BIND` | After successful `kernel.bind` | `socket`, `peer_process`, `peer_socket`, `direction` | Emitted to monitors of **both** sides; fields relative to each monitored process (`direction` inverted for the peer: `IN`↔`OUT`, `BOTH` unchanged). Before first related `Copy`. Await monitor buffer space (same backpressure model as `save`) |
+| `process_unbind_event` | `BIND` | After successful `kernel.unbind` | same | Same emit rules as bind |
 | `process_killed_event` | `KILLED` | `kill()` without error | — | Existing type |
 | `process_error_event` | `ERROR` | `kill(error)` | `error` | Existing type |
 

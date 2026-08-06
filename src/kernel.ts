@@ -202,6 +202,16 @@ export class Kernel {
     if(dir === Direction.NONE) throw new Error(`Direction cannot be NONE`)
     
     processFrom.bind(processTo, socket_from, socket_to, dir)
+    await this.emitBindEvents(
+      'process_bind_event',
+      processFrom,
+      processTo,
+      process_from,
+      socket_from,
+      process_to,
+      socket_to,
+      direction
+    )
   }
 
   async unbind(process_from: process_id, socket_from: socket_id,
@@ -216,6 +226,55 @@ export class Kernel {
     if(dir === Direction.NONE) throw new Error(`Direction cannot be NONE`)
     
     processFrom.unbind(processTo, socket_from, socket_to, dir)
+    await this.emitBindEvents(
+      'process_unbind_event',
+      processFrom,
+      processTo,
+      process_from,
+      socket_from,
+      process_to,
+      socket_to,
+      direction
+    )
+  }
+
+  private async emitBindEvents(
+    typeName: 'process_bind_event' | 'process_unbind_event',
+    processFrom: Process,
+    processTo: Process,
+    process_from: process_id,
+    socket_from: socket_id,
+    process_to: process_id,
+    socket_to: socket_id,
+    dir: direction
+  ): Promise<void> {
+    const inverted = invertDirection(dir)
+    await this.monitorEmitter.awaitEmitToMonitors(
+      processFrom,
+      monitor_flag.BIND,
+      typeName,
+      () => ({
+        _type: typeName,
+        process: process_from,
+        socket: socket_from,
+        peer_process: process_to,
+        peer_socket: socket_to,
+        direction: dir,
+      })
+    )
+    await this.monitorEmitter.awaitEmitToMonitors(
+      processTo,
+      monitor_flag.BIND,
+      typeName,
+      () => ({
+        _type: typeName,
+        process: process_to,
+        socket: socket_to,
+        peer_process: process_from,
+        peer_socket: socket_from,
+        direction: inverted,
+      })
+    )
   }
 
   async monitor(
@@ -333,4 +392,10 @@ export class Kernel {
   onMonitorRelationAdded(target: Process, monitorEntry: import('./Process.js').ProcessMonitor): void {
     emitInitialBufferStates(target, monitorEntry, this.monitorEmitter)
   }
+}
+
+function invertDirection(dir: direction): direction {
+  if (dir === direction.IN) return direction.OUT
+  if (dir === direction.OUT) return direction.IN
+  return dir
 }

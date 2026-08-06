@@ -74,7 +74,8 @@ export enum monitor_flag {
   INITIAL_BUFFER_DATA = 512,
   BUFFER_STATE = 1024,
   BUFFER_DATA = 2048,
-  MANA = 4096
+  MANA = 4096,
+  BIND = 8192
 }
 
 // type index: 37
@@ -136,6 +137,22 @@ export interface process_measure_mana_event {
 // type index: 47
 export interface process_set_mana_limit_event {
   mana_limit: number
+}
+
+// type index: 48
+export interface process_bind_event {
+  socket: number
+  peer_process: number
+  peer_socket: number
+  direction: direction
+}
+
+// type index: 49
+export interface process_unbind_event {
+  socket: number
+  peer_process: number
+  peer_socket: number
+  direction: direction
 }
 
 
@@ -493,6 +510,22 @@ export function createGeneratedTypeRegistry(): { registry: TypeRegistry, types: 
   })
   types['process_set_mana_limit_event'] = process_set_mana_limit_event
 
+  // type index: 48
+  const process_bind_event = TypeDescription.create({
+    name: "process_bind_event",
+    kind: TypeKind.Message,
+    bases: [],
+  })
+  types['process_bind_event'] = process_bind_event
+
+  // type index: 49
+  const process_unbind_event = TypeDescription.create({
+    name: "process_unbind_event",
+    kind: TypeKind.Message,
+    bases: [],
+  })
+  types['process_unbind_event'] = process_unbind_event
+
   // Register all types to preserve indices
   registry.registerType(void_)
   registry.registerType(bool)
@@ -542,6 +575,8 @@ export function createGeneratedTypeRegistry(): { registry: TypeRegistry, types: 
   registry.registerType(process_socket_state_event)
   registry.registerType(process_measure_mana_event)
   registry.registerType(process_set_mana_limit_event)
+  registry.registerType(process_bind_event)
+  registry.registerType(process_unbind_event)
 
   // Fill enumMembers, bases, item/key
   read_annotation.bases = [
@@ -590,6 +625,7 @@ export function createGeneratedTypeRegistry(): { registry: TypeRegistry, types: 
     { name: "BUFFER_STATE", value: 1024 },
     { name: "BUFFER_DATA", value: 2048 },
     { name: "MANA", value: 4096 },
+    { name: "BIND", value: 8192 },
   ]
 
   process_killed_event.bases = [
@@ -629,6 +665,14 @@ export function createGeneratedTypeRegistry(): { registry: TypeRegistry, types: 
   ]
 
   process_set_mana_limit_event.bases = [
+    process_event,
+  ]
+
+  process_bind_event.bases = [
+    process_event,
+  ]
+
+  process_unbind_event.bases = [
     process_event,
   ]
 
@@ -1050,6 +1094,52 @@ export function createGeneratedTypeRegistry(): { registry: TypeRegistry, types: 
     {
       name: "mana_limit",
       type: uint32,
+      annotations: [],
+    },
+  ]
+
+  process_bind_event.members = [
+    {
+      name: "socket",
+      type: uint32,
+      annotations: [],
+    },
+    {
+      name: "peer_process",
+      type: uint32,
+      annotations: [],
+    },
+    {
+      name: "peer_socket",
+      type: uint32,
+      annotations: [],
+    },
+    {
+      name: "direction",
+      type: direction,
+      annotations: [],
+    },
+  ]
+
+  process_unbind_event.members = [
+    {
+      name: "socket",
+      type: uint32,
+      annotations: [],
+    },
+    {
+      name: "peer_process",
+      type: uint32,
+      annotations: [],
+    },
+    {
+      name: "peer_socket",
+      type: uint32,
+      annotations: [],
+    },
+    {
+      name: "direction",
+      type: direction,
       annotations: [],
     },
   ]
