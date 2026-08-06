@@ -2,18 +2,19 @@ import type Process from './Process.js'
 import { ModuleProcess } from './ModuleProcess.js'
 import { LocalProcess } from './LocalProcess.js'
 
-import { createGeneratedTypeRegistry, direction, monitor_flag, type save_result } from './kernelApi.js'
+import { createGeneratedTypeRegistry, direction, monitor_flag, type save_result, type socket_binding } from './kernelApi.js'
 
 import type { 
   process_id, socket_id
 } from './types.js'
 import { Direction } from './types.js'
-import { TypeRegistry } from '@wa-os/ts-rpc'
+import { TypeRegistry, serializeTypeRegistry } from '@wa-os/ts-rpc'
 import { MonitorSocketBackpressure } from './MonitorSocketBackpressure.js'
 import { ProcessMonitorEmitter } from './ProcessMonitorEmitter.js'
 import type { MonitorConfig } from './monitorFlags.js'
 import { DEFAULT_MONITOR_FLAGS } from './monitorFlags.js'
 import { emitInitialBufferStates } from './monitorInit.js'
+import { listBindingsForProcess } from './socketBindings.js'
 
 export class Kernel {
 
@@ -337,6 +338,36 @@ export class Kernel {
     )
   }
 
+  async list_socket_bindings(id: process_id): Promise<socket_binding[]> {
+    const process = this.processes[id]
+    if (!process) {
+      throw new Error(`Process ${id} not found`)
+    }
+    return listBindingsForProcess(process)
+  }
+
+  async get_rpc_description(id: process_id, socket: socket_id): Promise<Uint8Array> {
+    const process = this.processes[id]
+    if (!process) {
+      throw new Error(`Process ${id} not found`)
+    }
+    if (process instanceof ModuleProcess) {
+      return process.readRawRpcDescriptionOrEmpty(socket)
+    }
+    if (process instanceof LocalProcess) {
+      const registry = process.getRpcDescription(socket)
+      if (!registry) {
+        return new Uint8Array(0)
+      }
+      try {
+        return serializeTypeRegistry(registry)
+      } catch {
+        return new Uint8Array(0)
+      }
+    }
+    return new Uint8Array(0)
+  }
+
 
   createRpcRegistry(): TypeRegistry {
     const result = createGeneratedTypeRegistry()
@@ -384,6 +415,14 @@ export class Kernel {
     types['kernel_set_mana_limit'].implementation = (
       process: number, mana_limit: number
     ): Promise<void> => this.set_mana_limit(process, mana_limit)
+
+    types['kernel_list_socket_bindings'].implementation = (
+      process: number
+    ): Promise<socket_binding[]> => this.list_socket_bindings(process)
+
+    types['kernel_get_rpc_description'].implementation = (
+      process: number, socket: number
+    ): Promise<Uint8Array> => this.get_rpc_description(process, socket)
     
     registry.assignMethodIds()
     return registry

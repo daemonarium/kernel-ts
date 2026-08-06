@@ -36,6 +36,8 @@ export interface kernel {
   "kernel.demonitor": any
   "kernel.measure_mana": any
   "kernel.set_mana_limit": any
+  "kernel.list_socket_bindings": any
+  "kernel.get_rpc_description": any
 }
 
 // type index: 26
@@ -149,6 +151,13 @@ export interface process_bind_event {
 
 // type index: 49
 export interface process_unbind_event {
+  socket: number
+  peer_process: number
+  peer_socket: number
+  direction: direction
+}
+
+export interface socket_binding {
   socket: number
   peer_process: number
   peer_socket: number
@@ -415,6 +424,30 @@ export function createGeneratedTypeRegistry(): { registry: TypeRegistry, types: 
   })
   types['kernel_set_mana_limit'] = kernel_set_mana_limit
 
+  const kernel_list_socket_bindings = TypeDescription.create({
+    name: "kernel.list_socket_bindings",
+    kind: TypeKind.Function,
+  })
+  types['kernel_list_socket_bindings'] = kernel_list_socket_bindings
+
+  const vector_socket_binding_allocator_socket_binding = TypeDescription.create({
+    name: "vector<socket_binding, allocator<socket_binding>>",
+    kind: TypeKind.Array,
+  })
+  types['vector_socket_binding_allocator_socket_binding'] = vector_socket_binding_allocator_socket_binding
+
+  const socket_binding = TypeDescription.create({
+    name: "socket_binding",
+    kind: TypeKind.Object,
+  })
+  types['socket_binding'] = socket_binding
+
+  const kernel_get_rpc_description = TypeDescription.create({
+    name: "kernel.get_rpc_description",
+    kind: TypeKind.Function,
+  })
+  types['kernel_get_rpc_description'] = kernel_get_rpc_description
+
   // type index: 36
   const monitor_flag = TypeDescription.create({
     name: "monitor_flag",
@@ -563,6 +596,10 @@ export function createGeneratedTypeRegistry(): { registry: TypeRegistry, types: 
   registry.registerType(kernel_demonitor)
   registry.registerType(kernel_measure_mana)
   registry.registerType(kernel_set_mana_limit)
+  registry.registerType(kernel_list_socket_bindings)
+  registry.registerType(vector_socket_binding_allocator_socket_binding)
+  registry.registerType(socket_binding)
+  registry.registerType(kernel_get_rpc_description)
   registry.registerType(monitor_flag)
   registry.registerType(process_killed_event)
   registry.registerType(process_event)
@@ -609,6 +646,12 @@ export function createGeneratedTypeRegistry(): { registry: TypeRegistry, types: 
   kernel_measure_mana.item = uint32
 
   kernel_set_mana_limit.item = void_
+
+  kernel_list_socket_bindings.item = vector_socket_binding_allocator_socket_binding
+
+  vector_socket_binding_allocator_socket_binding.item = socket_binding
+
+  kernel_get_rpc_description.item = binary
 
   monitor_flag.enumMembers = [
     { name: "NONE", value: 0 },
@@ -763,6 +806,16 @@ export function createGeneratedTypeRegistry(): { registry: TypeRegistry, types: 
     {
       name: "kernel.set_mana_limit",
       type: kernel_set_mana_limit,
+      annotations: [],
+    },
+    {
+      name: "kernel.list_socket_bindings",
+      type: kernel_list_socket_bindings,
+      annotations: [],
+    },
+    {
+      name: "kernel.get_rpc_description",
+      type: kernel_get_rpc_description,
       annotations: [],
     },
   ]
@@ -973,6 +1026,50 @@ export function createGeneratedTypeRegistry(): { registry: TypeRegistry, types: 
     },
     {
       name: "mana_limit",
+      type: uint32,
+      annotations: [],
+    },
+  ]
+
+  kernel_list_socket_bindings.members = [
+    {
+      name: "process",
+      type: uint32,
+      annotations: [],
+    },
+  ]
+
+  socket_binding.members = [
+    {
+      name: "socket",
+      type: uint32,
+      annotations: [],
+    },
+    {
+      name: "peer_process",
+      type: uint32,
+      annotations: [],
+    },
+    {
+      name: "peer_socket",
+      type: uint32,
+      annotations: [],
+    },
+    {
+      name: "direction",
+      type: direction,
+      annotations: [],
+    },
+  ]
+
+  kernel_get_rpc_description.members = [
+    {
+      name: "process",
+      type: uint32,
+      annotations: [],
+    },
+    {
+      name: "socket",
       type: uint32,
       annotations: [],
     },
@@ -1238,6 +1335,21 @@ async function kernel_set_mana_limit_impl(
   return Promise.resolve()
 }
 
+async function kernel_list_socket_bindings_impl(
+  process: number
+): Promise<socket_binding[]> {
+  /// TODO: implement
+  return Promise.resolve([])
+}
+
+async function kernel_get_rpc_description_impl(
+  process: number,
+  socket: number
+): Promise<Uint8Array> {
+  /// TODO: implement
+  return Promise.resolve(new Uint8Array(0))
+}
+
 export function implementMethods(result: ReturnType<typeof createGeneratedTypeRegistry>): void {
   const { registry, types } = result
   types['kernel_spawn'].implementation = kernel_spawn_impl
@@ -1250,6 +1362,8 @@ export function implementMethods(result: ReturnType<typeof createGeneratedTypeRe
   types['kernel_demonitor'].implementation = kernel_demonitor_impl
   types['kernel_measure_mana'].implementation = kernel_measure_mana_impl
   types['kernel_set_mana_limit'].implementation = kernel_set_mana_limit_impl
+  types['kernel_list_socket_bindings'].implementation = kernel_list_socket_bindings_impl
+  types['kernel_get_rpc_description'].implementation = kernel_get_rpc_description_impl
 }
 
 export function setupServer(): TypeRegistry {

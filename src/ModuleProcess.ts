@@ -307,6 +307,39 @@ export class ModuleProcess implements Process {
     }
   }
 
+  /**
+   * Soft read of rpc_description for inspection APIs.
+   * Returns empty bytes on any failure and never calls handleError / kill.
+   */
+  readRawRpcDescriptionOrEmpty(socket: socket_id = 0): Uint8Array {
+    try {
+      if (!this.instance || !this.memory) {
+        return new Uint8Array(0)
+      }
+      const malloc = this.instance.exports.malloc as ((size: number) => number) | undefined
+      const rpcDescription = this.instance.exports.rpc_description as
+        ((socket: number, pointer: number) => number) | undefined
+      if (!malloc || !rpcDescription) {
+        return new Uint8Array(0)
+      }
+      const pointer = malloc(4)
+      if (!pointer) {
+        return new Uint8Array(0)
+      }
+      const descriptionSize = rpcDescription(socket, pointer)
+      if (!descriptionSize) {
+        return new Uint8Array(0)
+      }
+      const descriptionPointer = new Uint32Array(this.memory.buffer, pointer, 1)[0]
+      if (!descriptionPointer) {
+        return new Uint8Array(0)
+      }
+      return new Uint8Array(this.memory.buffer, descriptionPointer, descriptionSize).slice()
+    } catch {
+      return new Uint8Array(0)
+    }
+  }
+
   getRpcDescription(socket: socket_id = 0): TypeRegistry | undefined {
     if(this.rpcDescription) return this.rpcDescription
     if(!this.instance?.exports.rpc_description) return undefined

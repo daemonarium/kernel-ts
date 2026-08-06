@@ -129,6 +129,15 @@ A recording session combines periodic memory snapshots with a FIFO stream of I/O
 
 **bind/unbind topology** is recorded with dedicated `process_bind_event` / `process_unbind_event` when the `BIND` flag is set. Host-side `kernel.bind` / `unbind` often leave no RPC footprint on the target’s kernel-API socket, so inferring topology from Copy/Data/Drain alone is incomplete. Kernel RPC traffic on that socket is still captured as ordinary I/O when Copy/Data/Drain flags are enabled.
 
+### Inspection APIs (bindings + registries)
+
+Used by the recorder (via kernel-shield) to capture decode metadata for dumps:
+
+| Method | Returns | Notes |
+|--------|---------|--------|
+| `list_socket_bindings(process_id)` | `socket_binding[]` | From `socketConnections`. Each row is relative to that process (`OUT` = `connectedTo`, `IN` = `connectedFrom`, same peer both ways → `BOTH`). Missing process → throw. |
+| `get_rpc_description(process_id, socket_id)` | `binary` | `ModuleProcess`: soft `readRawRpcDescriptionOrEmpty` (copy out of WASM memory; failures → empty, **no** process kill). `LocalProcess`: `serializeTypeRegistry` of `getRpcDescription(socket)`, or empty if unset. Missing process → throw. |
+
 ### Debug replay model
 
 Replay runs an **isolated WASM process** without the kernel, binds, or peers. Recorded IN/OUT on sockets replaces the external world.
