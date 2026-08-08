@@ -151,7 +151,8 @@ export class Kernel {
     process.pausePump()
     try {
       const snapshot_uid = process.runtime.nextSnapshotUid++
-      const memory = process.get_memory()
+      // Copy: get_memory() is often a live WASM/host view; a save result must be stable.
+      const memory = Uint8Array.from(process.get_memory())
       const mana_used = process.manaUsed
       const mana_limit = process.manaLimit
 

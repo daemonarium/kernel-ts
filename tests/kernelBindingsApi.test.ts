@@ -110,8 +110,6 @@ describe('kernel list_socket_bindings / get_rpc_description', () => {
   })
 
   it('returns non-empty rpc_description from kernel-shield.wasm', async () => {
-    // mock-module uses utils/module.cpp rpc_description which re-calls register_all after
-    // start() and throws under wasm-exceptions; kernel-shield has a dedicated export.
     const code = readFileSync(KERNEL_SHIELD_WASM)
     const kernel = new Kernel()
     const pid = await kernel.spawn(code, 2048, 5_000_000)
@@ -121,7 +119,9 @@ describe('kernel list_socket_bindings / get_rpc_description', () => {
     expect(restored.getTypes().length).to.be.greaterThan(0)
   })
 
-  it('soft-fails mock-module rpc_description without killing the process', async () => {
+  it('returns mock-module rpc_description without killing the process', async () => {
+    // Historically mock-module trapped in rpc_description (missing wasi stubs) and
+    // soft-failed to empty while corrupting the live RPC channel. It must succeed.
     const code = readFileSync(MOCK_MODULE_WASM)
     const kernel = new Kernel()
     const pid = await kernel.spawn(code, 16, 5_000_000)
@@ -129,7 +129,10 @@ describe('kernel list_socket_bindings / get_rpc_description', () => {
     expect(process.isAlive).to.equal(true)
 
     const bytes = await kernel.get_rpc_description(pid, 0)
-    expect(bytes.byteLength).to.equal(0)
+    expect(bytes.byteLength).to.be.greaterThan(0)
     expect(process.isAlive).to.equal(true)
+    const restored = deserializeTypeRegistry(bytes)
+    restored.assignMethodIds()
+    expect(restored.getMethods().some((m) => m.memberName.includes('echo'))).to.equal(true)
   })
 })
