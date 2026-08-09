@@ -379,6 +379,9 @@ export class ModuleProcess implements Process {
    * @param socket_id - The socket identifier where data is available
    */
   handleData(socket_id: number): void {
+    if (!this.isAlive) {
+      return
+    }
     try {
       if (!this.instance) {
         throw new Error('Process instance not initialized')
@@ -401,6 +404,9 @@ export class ModuleProcess implements Process {
    * @param socket_id - The socket identifier to drain
    */
   handleDrain(socket_id: number): void {
+    if (!this.isAlive) {
+      return
+    }
     try {
       if (!this.instance) {
         throw new Error('Process instance not initialized')
@@ -443,6 +449,9 @@ export class ModuleProcess implements Process {
       return
     }
     this.isAlive = false
+
+    this.runtime.pendingData.clear()
+    this.runtime.pendingDrain.clear()
 
     // Clean up all socket connections
     for (let i = 0; i < this.socketConnections.length; i++) {
