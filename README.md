@@ -10,6 +10,8 @@ Its main goal is to provide only the essential runtime primitives:
 The design is intentionally minimal because WA-OS needs equivalent kernels in multiple environments.
 This implementation targets Node.js and browsers, but the same contract should also be implementable in runtimes such as WAVM, Wasmer, or WASMEdge.
 
+Monorepo release gate: [`TESTING.md`](../TESTING.md) → `npm run gate`.
+
 ## Why this kernel stays minimal
 
 This kernel is expected to be hidden behind a first process that acts as a shield.
@@ -113,7 +115,7 @@ Not every observer needs a full replay trace. Flags split into **monitoring** (l
 
 Each monitor relation (target, monitor process, monitor socket) has its own flag set.
 
-Monitor events are sent as length-prefixed messages on the **flat** wire (`flat_socket_message_channel` / `FlatSocketMessageChannel`: `u32` type, `encoded_size`, sentinel). This is independent of USER-socket registry `dataFormat` (compressed/flat/key) used for Copy RPC payloads. The serialized struct is the message header; large binary data is appended as a **trailing message payload** after the header (via `begin_send` / `commit_send`), not embedded in the struct. This applies to `process_copy_event` (with `COPY_PAYLOAD`) and `process_socket_state_event` (with `INITIAL_BUFFER_DATA` / `BUFFER_DATA`).
+Monitor events are sent as length-prefixed messages on the **flat** wire (`flat_socket_message_channel` / `FlatSocketMessageChannel`: `u32` type, `encoded_size`, sentinel). This is independent of USER-socket registry `dataFormat` (compressed/flat/key) used for Copy RPC payloads. Host USER RPC is usually **flat** by default (`SocketRpc*` / `flat_socket_rpc_*`); compressed is opt-in on the module or TS client. The serialized struct is the message header; large binary data is appended as a **trailing message payload** after the header (via `begin_send` / `commit_send`), not embedded in the struct. This applies to `process_copy_event` (with `COPY_PAYLOAD`) and `process_socket_state_event` (with `INITIAL_BUFFER_DATA` / `BUFFER_DATA`).
 
 ### Recording model: snapshot + FIFO I/O
 
