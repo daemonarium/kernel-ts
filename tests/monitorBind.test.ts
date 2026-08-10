@@ -2,7 +2,7 @@ import { expect } from 'chai'
 import { Kernel } from '../src/kernel.js'
 import { LocalProcess } from '../src/LocalProcess.js'
 import { direction, monitor_flag } from '../src/kernelApi.js'
-import { LocalCircularBufferReader } from '@wa-os/ts-rpc'
+import { FlatLocalCircularBufferReader } from '@wa-os/ts-rpc'
 import type { LocalSocket } from '@wa-os/ts-rpc'
 
 const LENGTH_SIZE = 4
@@ -34,15 +34,20 @@ function readMonitorFrames(
       break
     }
     input.skipRead(LENGTH_SIZE)
-    const reader = new LocalCircularBufferReader(input, codecs)
+    const reader = new FlatLocalCircularBufferReader(input, codecs)
     reader.setReadOffset(0)
-    const typeIndex = Number(reader.readU64())
+    const typeIndex = reader.readU32()
+    reader.readU32() // encoded_size_0
     const codec = codecs.messages.getByIndex(typeIndex)
     let header: Record<string, unknown> = {}
     codec.deserialize(reader as any, (value: unknown) => {
       header = value as Record<string, unknown>
     })
     reader.readRest()
+    const sentinel = reader.readU32()
+    if (sentinel !== 0) {
+      throw new Error(`flat monitor frame: expected sentinel 0, got ${sentinel}`)
+    }
     frames.push({ typeName: codec.name, header })
     input.skipRead(msgLen)
   }

@@ -4,7 +4,7 @@ import type { ProcessMonitor } from './Process.js'
 import { createGeneratedTypeRegistry, monitor_flag } from './kernelApi.js'
 import {
   LocalCircularBuffer,
-  LocalCircularBufferWriter,
+  FlatLocalCircularBufferWriter,
   TypeKind,
   type TypeRegistry,
 } from '@wa-os/ts-rpc'
@@ -25,6 +25,11 @@ export interface MonitorCodecCache {
   codecs: CodecRegistry
 }
 
+/**
+ * Builds length-prefixed monitor frames matching FlatSocketMessageChannel /
+ * flat_materialized_codec:
+ * [u32 LE msgLen][type u32 LE][encoded_size_0][root…][writeRest…][u32 0][payload?]
+ */
 export class ProcessMonitorEmitter {
   private codecCache?: MonitorCodecCache
 
@@ -63,12 +68,22 @@ export class ProcessMonitorEmitter {
     const wireIndex = codecs.messages.getIndexOrThrow(typeName)
     const trailingSize = trailingPayload?.length ?? 0
     const tempBuffer = new LocalCircularBuffer(Math.max(256, trailingSize + 128))
-    const writer = new LocalCircularBufferWriter(tempBuffer, codecs as any)
-    writer.offset = LENGTH_SIZE
-    writer.writeU64(wireIndex)
+    const writer = new FlatLocalCircularBufferWriter(tempBuffer, codecs as any, LENGTH_SIZE)
+
+    writer.writeU32(wireIndex)
+
+    const sizePlaceholder = writer.getOffset()
+    writer.writeU32(0)
+    const frameStart = writer.getOffset()
+
     const codec = codecs.messages.getByIndex(wireIndex)
     codec.serialize(writer as any, header)
+
+    const realSize = writer.getOffset() - frameStart
+    writer.pokeU32(sizePlaceholder, realSize + 1)
+
     writer.writeRest()
+    writer.writeU32(0) // sentinel
 
     if (trailingPayload && trailingSize > 0) {
       // Poke trailing at writer.offset — do not use write(), which advances

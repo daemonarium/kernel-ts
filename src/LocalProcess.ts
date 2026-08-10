@@ -5,7 +5,7 @@ import { Direction } from './types.js'
 import { 
   TypeRegistry, 
   Socket, 
-  LocalCircularBufferReader,
+  FlatLocalCircularBufferReader,
   TypedValue, 
   CodecRegistry, 
   registerDynamicCodecs,
@@ -151,7 +151,7 @@ export class LocalProcess implements Process {
     try {
       const codecs = new CodecRegistry()
       registerDynamicCodecs(codecs, typeRegistry)
-      const reader = new LocalCircularBufferReader(socket.inputBuffer, codecs)
+      const reader = new FlatLocalCircularBufferReader(socket.inputBuffer, codecs)
 
       let result: TypedValue | null = null
       reader.readTyped<TypedValue>((value) => {

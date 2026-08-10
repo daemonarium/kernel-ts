@@ -51,7 +51,7 @@ Backpressure is naturally enforced at the binary-buffer level. It is driven by w
 If a consumer's input buffer is full, the producer's output buffer will fill up, and the producer must wait for the consumer to drain the data.
 
 **Why Circular Buffers?**
-Serialization and deserialization happen directly into and out of circular buffers (`LocalCircularBuffer`, `LocalCircularBufferWriter`, `LocalCircularBufferReader`). 
+Serialization and deserialization happen directly into and out of circular buffers (`LocalCircularBuffer`, `FlatLocalCircularBufferWriter`, `FlatLocalCircularBufferReader`). 
 Circular buffers provide predictable, bounded memory behavior. Because processes must manage their own memory and buffers, this explicit control over resource usage is crucial. It aligns perfectly with future requirements for charging and measurement (e.g., tracking mana/gas limits) in competitive bots and smart-contract-like workloads.
 
 ## Networking and Clusters
@@ -113,7 +113,7 @@ Not every observer needs a full replay trace. Flags split into **monitoring** (l
 
 Each monitor relation (target, monitor process, monitor socket) has its own flag set.
 
-Monitor events are sent as length-prefixed messages (`socket_message_channel` / `SocketMessageChannel`). The serialized struct is the message header; large binary data is appended as a **trailing message payload** after the header (via `begin_send` / `commit_send`), not embedded in the struct. This applies to `process_copy_event` (with `COPY_PAYLOAD`) and `process_socket_state_event` (with `INITIAL_BUFFER_DATA` / `BUFFER_DATA`).
+Monitor events are sent as length-prefixed messages on the **flat** wire (`flat_socket_message_channel` / `FlatSocketMessageChannel`: `u32` type, `encoded_size`, sentinel). This is independent of USER-socket registry `dataFormat` (compressed/flat/key) used for Copy RPC payloads. The serialized struct is the message header; large binary data is appended as a **trailing message payload** after the header (via `begin_send` / `commit_send`), not embedded in the struct. This applies to `process_copy_event` (with `COPY_PAYLOAD`) and `process_socket_state_event` (with `INITIAL_BUFFER_DATA` / `BUFFER_DATA`).
 
 ### Recording model: snapshot + FIFO I/O
 
