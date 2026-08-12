@@ -355,7 +355,8 @@ export class Kernel {
     if (process instanceof ModuleProcess) {
       return process.readRawRpcDescriptionOrEmpty(socket)
     }
-    if (process instanceof LocalProcess) {
+    // Duck-type: LocalProcess, NativeProcess, and any Process with getRpcDescription
+    if (typeof (process as { getRpcDescription?: unknown }).getRpcDescription === 'function') {
       const registry = process.getRpcDescription(socket)
       if (!registry) {
         return new Uint8Array(0)
