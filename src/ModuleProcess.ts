@@ -90,6 +90,12 @@ function wasiImports(process: ModuleProcess) {
     environ_get(environPtr: number, environBufPtr: number): number {
       return 0
     },
+    clock_time_get(_clockId: number, _precision: bigint | number, timePtr: number): number {
+      const mem = new DataView(process.memory!.buffer)
+      const ns = BigInt(Math.round(performance.now() * 1e6))
+      mem.setBigUint64(timePtr, ns, true)
+      return 0
+    },
   }
 }
 

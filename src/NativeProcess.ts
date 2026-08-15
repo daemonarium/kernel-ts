@@ -39,6 +39,7 @@ export class NativeProcess implements Process {
   readonly addon: NativeProcessAddon
   readonly serviceType: string
   readonly handle: NativeProcessHandle
+  readonly serviceOpts?: { dataDir?: string, bufSize?: number }
 
   private sockets: Array<NativeSocket | undefined> = []
 
@@ -48,14 +49,16 @@ export class NativeProcess implements Process {
     manaLimit: number,
     socketCount: number,
     addon: NativeProcessAddon,
-    serviceType: string
+    serviceType: string,
+    serviceOpts?: { dataDir?: string, bufSize?: number }
   ) {
     this.kernel = kernel
     this.id = id
     this.manaLimit = manaLimit
     this.addon = addon
     this.serviceType = serviceType
-    this.handle = addon.createNativeProcess(serviceType, id, socketCount)
+    this.serviceOpts = serviceOpts
+    this.handle = addon.createNativeProcess(serviceType, id, socketCount, serviceOpts)
 
     addon.setFlushCallback(this.handle, (socket: number) => {
       try {

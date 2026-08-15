@@ -18,7 +18,8 @@ export interface NativeProcessAddon {
   createNativeProcess(
     serviceType: string,
     id: number,
-    socketCount: number
+    socketCount: number,
+    opts?: { dataDir?: string, bufSize?: number }
   ): NativeProcessHandle
 
   openSocket(handle: NativeProcessHandle, index: number, bufSize: number): void
