@@ -21,5 +21,6 @@ export type { process_killed_event, process_error_event } from './kernelApi.js'
 export type { Range, BatchOperation, DatabaseBackend } from './types.js'
 export { BatchOperationType, ModuleFlags, Direction } from './types.js'
 export type { process_id, socket_id, module_id } from './types.js'
+export { KernelStreamEndpoint } from './KernelStreamEndpoint.js'
 import * as kernelApi from './kernelApi.js'
 export { kernelApi }
