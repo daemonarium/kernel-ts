@@ -172,7 +172,8 @@ export class ModuleProcess implements Process {
 
   /** set the module code directly from binary data */
   async setModuleCode(code: Uint8Array): Promise<void> {
-    this.module = new WebAssembly.Module(code as BufferSource)
+    // Async compile: browsers disallow sync WebAssembly.Module for buffers > 8MB.
+    this.module = await WebAssembly.compile(code as BufferSource)
   }
 
   /**
@@ -244,7 +245,8 @@ export class ModuleProcess implements Process {
       }
 
       try {
-        this.instance = new WebAssembly.Instance(this.module, this.imports)
+        // Async instantiate mirrors compile — large modules must not block the main thread.
+        this.instance = await WebAssembly.instantiate(this.module, this.imports)
       } catch (error) {
         console.error('Error instantiating module', error)
         console.error('module imports', WebAssembly.Module.imports(this.module))
@@ -372,7 +374,7 @@ export class ModuleProcess implements Process {
    */
   handleError(error: string | Error): void {
     const errorMessage = error instanceof Error ? error.message : error
-    // Call kernel.kill asynchronously to avoid blocking
+    console.error(`process ${this.id} error:`, error)
     this.kernel.kill(this.id, errorMessage).catch((killError) => {
       console.error(`Failed to kill process ${this.id} after error:`, killError)
     })
@@ -381,8 +383,6 @@ export class ModuleProcess implements Process {
   /**
    * Handles data available on a socket.
    * Called when data is flushed from another process to this process's socket input buffer.
-   * 
-   * @param socket_id - The socket identifier where data is available
    */
   handleData(socket_id: number): void {
     if (!this.isAlive) {
@@ -398,7 +398,10 @@ export class ModuleProcess implements Process {
       }
       handleData(socket_id)
     } catch (error) {
-      this.handleError(error instanceof Error ? error : new Error(String(error)))
+      // Do not kill the process: a C++ exception here used to become
+      // WebAssembly.Exception, kernel.kill, and every in-flight RPC spinner
+      // (create table / put) hung forever with nothing in the page console.
+      console.error(`process ${this.id} socket ${socket_id} handleData:`, error)
     }
     this.kernel.monitorBackpressure.notifyInputConsumed(this.id, socket_id)
   }
