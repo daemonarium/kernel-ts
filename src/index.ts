@@ -1,6 +1,14 @@
 export type { default as Process } from './Process.js'
 export { ModuleProcess } from './ModuleProcess.js'
 export { LocalProcess } from './LocalProcess.js'
+export { EmscriptenProcess } from './EmscriptenProcess.js'
+export {
+  attachEmscripten,
+  type WaosImports,
+  type EmscriptenGlue,
+  type AttachEmscriptenOptions
+} from './attachEmscripten.js'
+export { wasmImports, wasiImports } from './wasmImports.js'
 export { NativeProcess } from './NativeProcess.js'
 export { NativeSocket, type NativeSocketOptions } from './NativeSocket.js'
 export { NativeCircularBuffer } from './NativeCircularBuffer.js'

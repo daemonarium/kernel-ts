@@ -28,6 +28,7 @@ The idea is:
 
 - `Kernel`: owns the `processes` table and process lifecycle operations
 - `ModuleProcess`: executes WASM modules and exposes module sockets
+- `EmscriptenProcess`: wraps an already-running Emscripten module (WebGL / `requestAnimationFrame` glue). The kernel does **not** instantiate it or drive `_start`. `attach(instance, memory)` takes the live instance; C `sockets_init` may run after attach — `getSocket` / flush bind `ModuleSockets` lazily. Spawn with `kernel.spawnEmscripten()`, or `attachEmscripten({ kernel, loadGlue | scriptSrc })` to spawn and attach without calling module exports (`scriptSrc` injects `__waosKernelImports` / `__waosAttach` for Emscripten pre-js). Same `waos_socket_flush` / `waos_socket_input_drain` pump as `ModuleProcess`.
 - `LocalProcess`: local non-WASM process, useful for tests and adapters
 - `Process`: shared interface for lifecycle, socket wiring, and monitoring
 

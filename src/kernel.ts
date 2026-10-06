@@ -1,6 +1,7 @@
 import type Process from './Process.js'
 import { ModuleProcess } from './ModuleProcess.js'
 import { LocalProcess } from './LocalProcess.js'
+import { EmscriptenProcess } from './EmscriptenProcess.js'
 
 import { createGeneratedTypeRegistry, direction, monitor_flag, type save_result, type socket_binding } from './kernelApi.js'
 
@@ -103,6 +104,36 @@ export class Kernel {
       this.processes[processId] = process
     }
     
+    return processId
+  }
+
+  async spawnEmscripten(mana_limit: number = 1000000): Promise<process_id> {
+    let processId: process_id | undefined
+
+    if (this.processes.length > 0) {
+      const searchStart = this.processSearchPosition
+      do {
+        this.processSearchPosition = (this.processSearchPosition + 1) % this.processes.length
+        if (this.processes[this.processSearchPosition] === null) {
+          processId = this.processSearchPosition
+          break
+        }
+      } while (this.processSearchPosition !== searchStart)
+    }
+
+    if (processId === undefined) {
+      processId = this.processes.length
+      this.processSearchPosition = processId
+    }
+
+    const process = new EmscriptenProcess(this, processId, mana_limit)
+
+    if (processId >= this.processes.length) {
+      this.processes.push(process)
+    } else {
+      this.processes[processId] = process
+    }
+
     return processId
   }
 
