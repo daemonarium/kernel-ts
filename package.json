@@ -1,30 +1,31 @@
 {
-  "name": "@wa-os/ts-kernel",
+  "name": "@daemonarium/kernel",
   "version": "0.1.0",
-  "description": "WebAssembly OS Kernel - typescript implementation",
-  "main": "src/index.ts",
-  "module": "src/index.ts",
+  "description": "Daemonarium kernel for the browser and Node: processes, socket IPC, and deterministic monitor events",
+  "main": "dist/src/index.js",
+  "module": "dist/src/index.js",
   "types": "dist/src/index.d.ts",
-  "author": "Michał Łaszczewski",
+  "author": "Magowie Sp. z o.o.",
   "license": "MIT",
   "type": "module",
-  "scripts": {
-    "build": "tsc",
-    "start": "node dist/src/index.js",
-    "test": "tsx ../node_modules/mocha/bin/mocha.js --timeout 10000 'tests/**/*.test.ts'"
+  "files": ["dist", "README.md", "LICENSE"],
+  "publishConfig": {
+    "access": "public"
   },
-  "bin": {
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "test": "tsx node_modules/.bin/mocha --timeout 10000 'tests/**/*.test.ts'"
   },
   "dependencies": {
-    "yargs": "^17.7.2"
+    "@daemonarium/rpc": "^0.1.0"
   },
   "devDependencies": {
-    "typescript": "~5.9.0",
-    "@types/yargs": "^17.0.32",
+    "@daemonarium/rpc": "0.1.0",
     "@types/mocha": "^10.0.0",
     "@types/node": "^22.18.11",
     "chai": "^4.3.10",
     "mocha": "^10.2.0",
-    "tsx": "^4.7.0"
+    "tsx": "^4.7.0",
+    "typescript": "~5.9.0"
   }
 }

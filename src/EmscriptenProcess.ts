@@ -7,7 +7,7 @@ import {
   Socket,
   TypedValue,
   TypeRegistry,
-} from '@wa-os/ts-rpc'
+} from '@daemonarium/rpc'
 import type { process_killed_event, process_error_event } from './kernelApi.js'
 import { ProcessRuntimeState } from './ProcessRuntimeState.js'
 import type { MonitorConfig } from './monitorFlags.js'

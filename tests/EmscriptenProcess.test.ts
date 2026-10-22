@@ -4,7 +4,7 @@ import { LocalProcess } from '../src/LocalProcess.js'
 import { EmscriptenProcess } from '../src/EmscriptenProcess.js'
 import { attachEmscripten } from '../src/attachEmscripten.js'
 import { Direction } from '../src/types.js'
-import { SOCKET_FLAG_OPEN } from '@wa-os/ts-rpc'
+import { SOCKET_FLAG_OPEN } from '@daemonarium/rpc'
 
 const SOCKET_INFO_SIZE = 40
 const HEADER_SIZE = 12

@@ -3,18 +3,16 @@ import type Process from './Process.js'
 import type { ProcessMonitor } from './Process.js'
 import { createGeneratedTypeRegistry, monitor_flag } from './kernelApi.js'
 import {
+  CodecRegistry,
   LocalCircularBuffer,
   FlatLocalCircularBufferWriter,
   TypeKind,
-  type TypeRegistry,
-} from '@wa-os/ts-rpc'
-import { CodecRegistry } from '@wa-os/ts-rpc/src/codec.js'
-import {
+  deserializeValueByType,
   registerDynamicCodecs,
   serializeValueByType,
-  deserializeValueByType,
   type JsonValue,
-} from '@wa-os/ts-rpc/src/valueSerialization.js'
+  type TypeRegistry,
+} from '@daemonarium/rpc'
 import { MonitorSocketBackpressure } from './MonitorSocketBackpressure.js'
 import { hasMonitorFlag } from './monitorFlags.js'
 

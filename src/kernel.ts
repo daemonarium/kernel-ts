@@ -9,7 +9,7 @@ import type {
   process_id, socket_id
 } from './types.js'
 import { Direction } from './types.js'
-import { TypeRegistry, serializeTypeRegistry } from '@wa-os/ts-rpc'
+import { TypeRegistry, serializeTypeRegistry } from '@daemonarium/rpc'
 import { MonitorSocketBackpressure } from './MonitorSocketBackpressure.js'
 import { ProcessMonitorEmitter } from './ProcessMonitorEmitter.js'
 import type { MonitorConfig } from './monitorFlags.js'

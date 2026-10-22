@@ -1,5 +1,5 @@
 // Auto-generated TypeScript RPC Server
-import { TypeRegistry, TypeDescription, TypeKind } from '@wa-os/ts-rpc'
+import { TypeRegistry, TypeDescription, TypeKind } from '@daemonarium/rpc'
 
 // TypeScript type definitions
 // type index: 16

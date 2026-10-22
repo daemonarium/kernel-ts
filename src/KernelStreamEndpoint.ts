@@ -11,7 +11,7 @@ import {
   type LocalSocket,
   type MessageChannel,
   type SocketOptions,
-} from '@wa-os/ts-rpc'
+} from '@daemonarium/rpc'
 import type { Kernel } from './kernel.js'
 import { LocalProcess } from './LocalProcess.js'
 import { direction } from './kernelApi.js'

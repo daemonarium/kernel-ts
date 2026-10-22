@@ -12,7 +12,7 @@ import {
   LocalSockets,
   LocalSocket,
   SocketOptions,
-} from "@wa-os/ts-rpc"
+} from "@daemonarium/rpc"
 import type { process_killed_event, process_error_event } from './kernelApi.js'
 import { ProcessRuntimeState } from './ProcessRuntimeState.js'
 import type { MonitorConfig } from './monitorFlags.js'
@@ -110,7 +110,7 @@ export class LocalProcess implements Process {
     if (!localSocket) {
       return
     }
-    localSocket.handleData()
+    ;(localSocket as LocalSocket).handleData()
     this.kernel.monitorBackpressure.notifyInputConsumed(this.id, socket_id)
   }
 
@@ -119,7 +119,7 @@ export class LocalProcess implements Process {
     if (!localSocket) {
       return
     }
-    localSocket.handleDrain()
+    ;(localSocket as LocalSocket).handleDrain()
   }
 
   serializeToSocket(socket: socket_id, value: TypedValue, _typeRegistry: TypeRegistry): void {

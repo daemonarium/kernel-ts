@@ -1,4 +1,4 @@
-import type { Socket } from '@wa-os/ts-rpc'
+import type { Socket } from '@daemonarium/rpc'
 import type { NativeProcessAddon, NativeProcessHandle } from './NativeProcessAddon.js'
 import { NativeCircularBuffer } from './NativeCircularBuffer.js'
 

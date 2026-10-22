@@ -1,8 +1,8 @@
 import { expect } from 'chai'
-import { readFileSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { deserializeTypeRegistry } from '@wa-os/ts-rpc'
+import { deserializeTypeRegistry } from '@daemonarium/rpc'
 import { Kernel } from '../src/kernel.js'
 import { LocalProcess } from '../src/LocalProcess.js'
 import { createGeneratedTypeRegistry, direction } from '../src/kernelApi.js'
@@ -109,7 +109,8 @@ describe('kernel list_socket_bindings / get_rpc_description', () => {
     }
   })
 
-  it('returns non-empty rpc_description from kernel-shield.wasm', async () => {
+  const shieldTest = existsSync(KERNEL_SHIELD_WASM) ? it : it.skip
+  shieldTest('returns non-empty rpc_description from kernel-shield.wasm', async () => {
     const code = readFileSync(KERNEL_SHIELD_WASM)
     const kernel = new Kernel()
     const pid = await kernel.spawn(code, 2048, 5_000_000)
@@ -119,7 +120,8 @@ describe('kernel list_socket_bindings / get_rpc_description', () => {
     expect(restored.getTypes().length).to.be.greaterThan(0)
   })
 
-  it('returns mock-module rpc_description without killing the process', async () => {
+  const mockTest = existsSync(MOCK_MODULE_WASM) ? it : it.skip
+  mockTest('returns mock-module rpc_description without killing the process', async () => {
     // Historically mock-module trapped in rpc_description (missing wasi stubs) and
     // soft-failed to empty while corrupting the live RPC channel. It must succeed.
     const code = readFileSync(MOCK_MODULE_WASM)

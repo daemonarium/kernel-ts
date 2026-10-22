@@ -1,4 +1,4 @@
-import type { CircularBuffer } from '@wa-os/ts-rpc'
+import type { CircularBuffer } from '@daemonarium/rpc'
 import type {
   BufferDirection,
   NativeProcessAddon,

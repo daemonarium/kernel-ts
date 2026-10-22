@@ -2,8 +2,8 @@ import { expect } from 'chai'
 import { Kernel } from '../src/kernel.js'
 import { LocalProcess } from '../src/LocalProcess.js'
 import { direction, monitor_flag } from '../src/kernelApi.js'
-import { FlatLocalCircularBufferReader } from '@wa-os/ts-rpc'
-import type { LocalSocket } from '@wa-os/ts-rpc'
+import { FlatLocalCircularBufferReader } from '@daemonarium/rpc'
+import type { LocalSocket } from '@daemonarium/rpc'
 
 const LENGTH_SIZE = 4
 

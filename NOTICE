@@ -1,0 +1,5 @@
+kernel-ts
+Copyright (c) 2026 Magowie Sp. z o.o.
+
+This package depends on @daemonarium/rpc:
+https://github.com/daemonarium/rpc-ts

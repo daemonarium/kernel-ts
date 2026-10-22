@@ -1,7 +1,7 @@
 import type { Kernel } from './kernel.js'
 import type { process_id, socket_id } from './types.js'
 import type { Direction } from './types.js'
-import type { Socket, TypeRegistry, TypedValue } from '@wa-os/ts-rpc'
+import type { Socket, TypeRegistry, TypedValue } from '@daemonarium/rpc'
 import type { ProcessRuntimeState } from './ProcessRuntimeState.js'
 import type { MonitorConfig } from './monitorFlags.js'
 
