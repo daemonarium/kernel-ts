@@ -42,7 +42,7 @@ export default interface Process {
 
   manaUsed: number
   manaLimit: number
-  useMana(mana: number): void
+  useMana(mana: number | bigint): void
 
   socketConnections: Array<SocketConnection>
   monitors: Array<ProcessMonitor>

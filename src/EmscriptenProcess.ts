@@ -64,8 +64,9 @@ export class EmscriptenProcess implements Process {
     return this.runtime.isPumpPaused()
   }
 
-  useMana(mana: number): void {
-    this.manaUsed += mana
+  useMana(mana: number | bigint): void {
+    const amount = typeof mana === 'bigint' ? Number(mana) : mana
+    this.manaUsed += amount
     if (this.manaUsed > this.manaLimit) {
       throw new Error(`Mana limit exceeded. Mana used: ${this.manaUsed}, mana limit: ${this.manaLimit}`)
     }

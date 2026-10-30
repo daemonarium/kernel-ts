@@ -105,8 +105,10 @@ export class ModuleProcess implements Process {
    * This method should use the specified amount of mana for the process.
    * If the mana limit is exceeded, an error should be thrown.
    */
-  useMana(mana: number) {
-    this.manaUsed += mana
+  useMana(mana: number | bigint) {
+    // The gas import is i64, so the host receives a bigint.
+    const amount = typeof mana === 'bigint' ? Number(mana) : mana
+    this.manaUsed += amount
     if(this.manaUsed > this.manaLimit) {      
       throw new Error(`Mana limit exceeded. Mana used: ${this.manaUsed}, mana limit: ${this.manaLimit}`)
     }

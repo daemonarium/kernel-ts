@@ -102,7 +102,7 @@ export function wasmImports(process: Process) {
         process.handleError(error instanceof Error ? error : new Error(String(error)))
       }
     },
-    waos_use_mana(mana: number) {
+    waos_use_mana(mana: number | bigint) {
       process.useMana(mana)
     }
   }
